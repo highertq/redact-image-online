@@ -152,25 +152,56 @@ function buildJsonLd() {
 
 export default function Home() {
   return (
-    <div className="flex flex-col gap-14">
+    <div className="flex flex-col gap-16">
       <script
         type="application/ld+json"
         // Content is generated from the constants above, not user input.
         dangerouslySetInnerHTML={{ __html: buildJsonLd() }}
       />
 
-      <section className="flex flex-col gap-4">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Redact Image Online — Free and Private
-        </h1>
-        <p className="max-w-2xl text-base leading-relaxed text-neutral-600">
+      <section className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-h1 font-semibold text-ink md:text-display">
+            Redact Image Online — Free and Private
+          </h1>
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-body-sm text-ink-2">
+            {[
+              "No upload — the image is decoded in this tab",
+              "Solid fill, not a blur",
+              "Free, no account",
+            ].map((claim) => (
+              <li key={claim} className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="grid h-4 w-4 place-items-center rounded-full bg-accent-soft text-accent"
+                >
+                  <svg
+                    viewBox="0 0 12 12"
+                    className="h-2.5 w-2.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m2.5 6.5 2.5 2.5 4.5-5" />
+                  </svg>
+                </span>
+                {claim}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <Redactor />
+
+        <p className="measure text-body-sm leading-relaxed text-ink-2">
           When you need to redact image online before sending it to a client, a
           landlord, or a support team, the goal is simple: the private details
           should be gone, not just hard to see. This tool runs entirely in your
           browser, draws solid boxes over whatever you select, and hands back a
           fresh PNG.
         </p>
-        <Redactor />
       </section>
 
       <section className="flex flex-col gap-4">

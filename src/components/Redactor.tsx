@@ -6,6 +6,7 @@ import BoxPopover from "@/components/BoxPopover";
 import EditorStatus from "@/components/EditorStatus";
 import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
 import ImageIntake from "@/components/ImageIntake";
+import { IconClose, IconDownload, IconSliders } from "@/components/Icons";
 import useActiveBox, { type BoxPatch } from "@/hooks/useActiveBox";
 import useAutoDetect from "@/hooks/useAutoDetect";
 import useCanvasEditor from "@/hooks/useCanvasEditor";
@@ -30,6 +31,7 @@ export default function Redactor() {
   const [notice, setNotice] = useState<string | null>(null);
   const [startOverArmed, setStartOverArmed] = useState(false);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("draw");
+  const [toolsOpen, setToolsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isCoarsePointer = useIsCoarsePointer();
@@ -241,6 +243,7 @@ export default function Redactor() {
     setExportError(null);
     setNotice(null);
     setStartOverArmed(false);
+    setToolsOpen(false);
   }, [detectTypes, reset, resetHistory]);
 
   // Two-step confirm instead of window.confirm: the first click only arms the
@@ -266,12 +269,62 @@ export default function Redactor() {
     startOver();
   }, [startOver, startOverArmed]);
 
+  // Escape closes the phone drawer. On desktop the panel is always visible, so
+  // the handler is harmless there.
+  useEffect(() => {
+    if (!toolsOpen) {
+      return;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setToolsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toolsOpen]);
+
   const { dragging, dragProps } = useFileDrop(loadFromList);
 
   const message = loadError ?? exportError;
 
+  const toolbar = (
+    <EditorToolbar
+      fillStyle={fillStyle}
+      onFillStyleChange={setFillStyle}
+      hasImage={image !== null}
+      hasRects={rects.length > 0}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      selectedIndex={selectedIndex}
+      onUndo={undoAction}
+      onRedo={redoAction}
+      onRemoveSelected={removeSelected}
+      onClearAll={clearAll}
+      onStartOver={requestStartOver}
+      startOverArmed={startOverArmed}
+      onDownload={() => {
+        void download();
+      }}
+      detecting={detecting}
+      detectStage={detectStage}
+      detectProgress={detectProgress}
+      detectMessage={detectMessage}
+      detectHasRun={detectHasRun}
+      onAutoDetect={() => {
+        void runAutoDetect();
+      }}
+      typeChips={detectTypes.chips}
+      enabledTypes={detectTypes.enabled}
+      onToggleType={detectTypes.toggle}
+      showModeSwitch={isCoarsePointer}
+      canvasMode={canvasMode}
+      onCanvasModeChange={setCanvasMode}
+    />
+  );
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className={`flex flex-col gap-4 ${image ? "pb-24 lg:pb-0" : ""}`}>
       <EditorStatus
         error={message}
         notice={notice}
@@ -282,53 +335,111 @@ export default function Redactor() {
 
       {image ? (
         <>
-          <p className="text-sm text-neutral-600">
-            {image.name} — {image.width} × {image.height} px.{" "}
-            {interactive
-              ? "Drag on the image to draw a box."
-              : "Scroll mode: the image does not respond to drags."}
-          </p>
-          <div
-            {...dragProps}
-            className={`overflow-hidden rounded-lg border-2 ${
-              dragging ? "border-neutral-900" : "border-neutral-200"
-            }`}
-          >
-            <canvas
-              ref={canvasRef}
-              width={image.width}
-              height={image.height}
-              role="img"
-              aria-label={`Image being redacted, ${image.width} by ${image.height} pixels`}
-              className={`block h-auto w-full bg-neutral-100 ${
-                interactive ? "cursor-crosshair" : "cursor-default"
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <p className="min-w-0 truncate text-body-sm text-ink-2">
+                  <span className="font-medium text-ink">{image.name}</span>
+                  <span className="text-ink-3">
+                    {" "}
+                    · {image.width} × {image.height} px
+                  </span>
+                </p>
+                <p className="text-label text-ink-3">
+                  {interactive
+                    ? "Drag on the image to draw a box."
+                    : "Scroll mode: the image does not respond to drags."}
+                </p>
+              </div>
+              <div
+                {...dragProps}
+                className={`overflow-hidden rounded-lg border bg-surface transition-state ${
+                  dragging ? "border-accent" : "border-line"
+                }`}
+              >
+                <canvas
+                  ref={canvasRef}
+                  width={image.width}
+                  height={image.height}
+                  role="img"
+                  aria-label={`Image being redacted, ${image.width} by ${image.height} pixels`}
+                  className={`block h-auto w-full ${
+                    interactive ? "cursor-crosshair" : "cursor-default"
+                  }`}
+                  // Draw mode swallows touch gestures so a drag draws instead of
+                  // scrolling. Scroll mode hands panning back to the browser, which
+                  // is the only way to reach the rest of a tall screenshot.
+                  style={{
+                    touchAction: interactive ? "none" : "pan-y pinch-zoom",
+                  }}
+                  {...handlers}
+                />
+              </div>
+              <p className="text-label leading-relaxed text-ink-3">
+                Your image never leaves this browser tab. Nothing is uploaded,
+                and the exported PNG is re-encoded from a canvas, which drops
+                metadata such as EXIF.
+              </p>
+            </div>
+
+            {/* One panel, two placements: right column on desktop, bottom
+                drawer on a phone. Visibility is CSS-only. */}
+            <div
+              id="tool-panel"
+              className={`fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-lg border-t border-line bg-paper p-4 pb-safe-2 shadow-pop transition-page lg:static lg:z-auto lg:max-h-none lg:translate-y-0 lg:overflow-visible lg:rounded-lg lg:border lg:border-line lg:bg-surface lg:p-4 lg:opacity-100 lg:shadow-none ${
+                toolsOpen
+                  ? "visible translate-y-0 opacity-100"
+                  : "invisible translate-y-full opacity-0 lg:visible"
               }`}
-              // Draw mode swallows touch gestures so a drag draws instead of
-              // scrolling. Scroll mode hands panning back to the browser, which
-              // is the only way to reach the rest of a tall screenshot.
-              style={{
-                touchAction: interactive ? "none" : "pan-y pinch-zoom",
-              }}
-              {...handlers}
-            />
+            >
+              <div className="mb-3 flex items-center justify-between lg:hidden">
+                <p className="text-body font-semibold text-ink">Tools</p>
+                <button
+                  type="button"
+                  onClick={() => setToolsOpen(false)}
+                  aria-label="Close tools"
+                  className="-mr-1 grid h-11 w-11 place-items-center rounded-md text-ink-2 transition-hover hover:bg-surface-2 hover:text-ink"
+                >
+                  <IconClose className="h-5 w-5" />
+                </button>
+              </div>
+              {toolbar}
+            </div>
           </div>
-          {activeBox.active && activeBox.rect ? (
-            <BoxPopover
-              // Keyed by index only: including coordinates would remount the
-              // panel on every patch, throwing away its measured position.
-              key={activeBox.active.index}
-              rect={activeBox.rect}
-              anchor={activeBox.active.anchor}
-              defaultStyle={fillStyle}
-              onToggleRedact={(nextSkipped) =>
-                patchActiveBox({ skip: nextSkipped })
-              }
-              onStyleChange={(style) => patchActiveBox({ style })}
-              onResetStyle={activeBox.resetStyle}
-              onDelete={activeBox.remove}
-              onClose={activeBox.close}
+
+          {toolsOpen ? (
+            <button
+              type="button"
+              aria-label="Close tools"
+              onClick={() => setToolsOpen(false)}
+              className="fixed inset-0 z-40 bg-ink/20 lg:hidden"
             />
           ) : null}
+
+          {/* Phone action bar: the two things that must never be scrolled away. */}
+          <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-line bg-paper/95 px-4 pb-safe-2 pt-2 backdrop-blur-md lg:hidden">
+            <button
+              type="button"
+              onClick={() => setToolsOpen((open) => !open)}
+              aria-expanded={toolsOpen}
+              aria-controls="tool-panel"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border border-line bg-paper px-3 text-body-sm font-semibold text-ink transition-hover hover:bg-surface-2"
+            >
+              <IconSliders className="h-4 w-4" />
+              Tools
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void download();
+              }}
+              aria-label="Download redacted PNG"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md bg-ink px-3 text-body-sm font-semibold text-paper transition-hover hover:bg-redact"
+            >
+              <IconDownload className="h-4 w-4" />
+              Download PNG
+            </button>
+          </div>
         </>
       ) : (
         <ImageIntake
@@ -338,44 +449,21 @@ export default function Redactor() {
         />
       )}
 
-      <EditorToolbar
-        fillStyle={fillStyle}
-        onFillStyleChange={setFillStyle}
-        hasImage={image !== null}
-        hasRects={rects.length > 0}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        selectedIndex={selectedIndex}
-        onUndo={undoAction}
-        onRedo={redoAction}
-        onRemoveSelected={removeSelected}
-        onClearAll={clearAll}
-        onStartOver={requestStartOver}
-        startOverArmed={startOverArmed}
-        onDownload={() => {
-          void download();
-        }}
-        detecting={detecting}
-        detectStage={detectStage}
-        detectProgress={detectProgress}
-        detectMessage={detectMessage}
-        detectHasRun={detectHasRun}
-        onAutoDetect={() => {
-          void runAutoDetect();
-        }}
-        typeChips={detectTypes.chips}
-        enabledTypes={detectTypes.enabled}
-        onToggleType={detectTypes.toggle}
-        showModeSwitch={isCoarsePointer}
-        canvasMode={canvasMode}
-        onCanvasModeChange={setCanvasMode}
-      />
-
-      <p className="text-xs leading-relaxed text-neutral-500">
-        Your image never leaves this browser tab. Nothing is uploaded, and the
-        exported PNG is re-encoded from a canvas, which drops metadata such as
-        EXIF.
-      </p>
+      {activeBox.active && activeBox.rect ? (
+        <BoxPopover
+          // Keyed by index only: including coordinates would remount the
+          // panel on every patch, throwing away its measured position.
+          key={activeBox.active.index}
+          rect={activeBox.rect}
+          anchor={activeBox.active.anchor}
+          defaultStyle={fillStyle}
+          onToggleRedact={(nextSkipped) => patchActiveBox({ skip: nextSkipped })}
+          onStyleChange={(style) => patchActiveBox({ style })}
+          onResetStyle={activeBox.resetStyle}
+          onDelete={activeBox.remove}
+          onClose={activeBox.close}
+        />
+      ) : null}
     </div>
   );
 }
