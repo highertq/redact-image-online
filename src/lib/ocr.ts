@@ -28,7 +28,10 @@ export async function recognizeWords(
   });
 
   try {
-    const result = await worker.recognize(canvas);
+    // `blocks` defaults to false in tesseract.js, so word/line geometry is only
+    // returned when it is requested explicitly. Without this the result carries
+    // text and nothing else, and every auto-detect pass yields zero boxes.
+    const result = await worker.recognize(canvas, {}, { text: true, blocks: true });
     const blocks = result.data.blocks ?? [];
     const words: OcrWord[] = [];
     let lineId = 0;

@@ -45,11 +45,25 @@ export default function useAutoDetect(): DetectState {
         label: box.type,
         auto: true,
       }));
-      setResult(
-        `Found ${rects.length} ${rects.length === 1 ? "item" : "items"}. Always review every box before downloading.`,
-      );
+
+      if (words.length === 0) {
+        setResult(
+          "No text was recognized in this image. You can still draw boxes manually.",
+        );
+      } else if (rects.length === 0) {
+        setResult(
+          `Read ${words.length} ${words.length === 1 ? "word" : "words"} but found no sensitive patterns. Always review the image before downloading.`,
+        );
+      } else {
+        setResult(
+          `Found ${rects.length} ${rects.length === 1 ? "item" : "items"}. Always review every box before downloading.`,
+        );
+      }
       return rects;
-    } catch {
+    } catch (error) {
+      // Surfacing the reason matters here: a silent catch made a broken OCR
+      // pipeline look like "nothing sensitive in this image".
+      console.error("Auto-detect failed:", error);
       setResult(
         "Text detection failed. You can still draw boxes manually.",
       );
