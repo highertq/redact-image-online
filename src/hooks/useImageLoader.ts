@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { isEditableTarget, pickImageFromClipboard } from "@/lib/clipboard";
 import {
   REJECT_MESSAGES,
   validateDimensions,
@@ -37,16 +38,35 @@ function loadImageElement(url: string): Promise<HTMLImageElement> {
   });
 }
 
+type LoadOptions = {
+  /**
+   * Invoked when an image is pasted anywhere on the page. The owner supplies
+   * this so a pasted file runs through the same path as a picked one (which
+   * also clears the previous boxes and the detection result).
+   */
+  onPastedFile?: (file: File) => void;
+};
+
 /**
  * Owns the decoded bitmap and the object URL lifetime. The URL only exists for
  * the duration of the decode and is revoked in `finally`, so no blob URL
  * outlives the load.
+ *
+ * Also installs the window-level paste listener. It subscribes once and
+ * dispatches through a ref, so a changing callback never re-subscribes.
  */
-export default function useImageLoader(): LoadState {
+export default function useImageLoader(options: LoadOptions = {}): LoadState {
+  const { onPastedFile } = options;
   const bitmapRef = useRef<ImageBitmap | null>(null);
   const [image, setImage] = useState<LoadedImage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const pastedFileRef = useRef(onPastedFile);
+
+  useEffect(() => {
+    pastedFileRef.current = onPastedFile;
+  }, [onPastedFile]);
 
   const disposeBitmap = useCallback(() => {
     bitmapRef.current?.close();
@@ -58,6 +78,25 @@ export default function useImageLoader(): LoadState {
       disposeBitmap();
     };
   }, [disposeBitmap]);
+
+  useEffect(() => {
+    const onPaste = (event: ClipboardEvent) => {
+      // Text fields, selects and contenteditable hosts handle their own paste.
+      if (isEditableTarget(event.target as HTMLElement | null)) {
+        return;
+      }
+      const file = pickImageFromClipboard(event.clipboardData);
+      // Pasting plain text is normal on a page. Stay silent, change nothing.
+      if (!file) {
+        return;
+      }
+      event.preventDefault();
+      pastedFileRef.current?.(file);
+    };
+
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
 
   const loadFile = useCallback(
     async (file: File) => {

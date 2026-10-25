@@ -27,7 +27,7 @@ const STEPS = [
   },
   {
     title: "Draw a box over anything private",
-    body: "Drag across the image to cover a name, address, or face. Use Auto-detect sensitive text if you want the tool to look for emails, phone numbers, SSNs, card numbers, and API keys first.",
+    body: "Drag across the image to cover a name, address, or face. Use Auto-detect sensitive text if you want the tool to look for emails, phone numbers, SSNs, card numbers, IP addresses, and API keys first.",
   },
   {
     title: "Pick a fill style",
@@ -44,6 +44,7 @@ const AUTO_TYPES = [
   { label: "Phone numbers", detail: "US formats with separators" },
   { label: "Social Security numbers", detail: "the 123-45-6789 shape" },
   { label: "Card numbers", detail: "13 to 19 digits that pass a checksum" },
+  { label: "IP addresses", detail: "the 192.168.0.1 shape" },
   { label: "API keys", detail: "sk-, AKIA, and ghp_ prefixed strings" },
 ];
 

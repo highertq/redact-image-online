@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import EditorToolbar from "@/components/EditorToolbar";
 import useAutoDetect from "@/hooks/useAutoDetect";
@@ -12,8 +12,34 @@ import useRectHistory from "@/hooks/useRectHistory";
 import { MAX_FILE_BYTES, formatBytes, type FillStyle } from "@/lib/image";
 import type { Rect } from "@/lib/geometry";
 
+const MULTI_FILE_NOTICE = "Only the first image was opened.";
+
 export default function Redactor() {
-  const { image, error: loadError, busy, loadFile, reset } = useImageLoader();
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [fillStyle, setFillStyle] = useState<FillStyle>("black");
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const {
+    running: detecting,
+    progress: detectProgress,
+    result: detectResult,
+    run: runDetect,
+    clearResult: clearDetectResult,
+  } = useAutoDetect();
+
+  // The paste listener lives inside useImageLoader, but the resulting file has
+  // to run through the same "reset boxes, clear detection" path as a picked
+  // one. A latest-ref hands it that path without an ordering cycle between the
+  // two hooks.
+  const openFileRef = useRef<(file: File) => void>(() => {});
+
+  const { image, error: loadError, busy, loadFile, reset } = useImageLoader({
+    onPastedFile: (file) => openFileRef.current(file),
+  });
+
   const {
     rects,
     canUndo,
@@ -23,10 +49,6 @@ export default function Redactor() {
     redo,
     reset: resetHistory,
   } = useRectHistory();
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [fillStyle, setFillStyle] = useState<FillStyle>("black");
-  const [exportError, setExportError] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
 
   const onAdd = useCallback(
     (rect: Rect) => {
@@ -44,13 +66,23 @@ export default function Redactor() {
     onSelect: setSelectedIndex,
   });
 
-  const {
-    running: detecting,
-    progress: detectProgress,
-    result: detectResult,
-    run: runDetect,
-    clearResult: clearDetectResult,
-  } = useAutoDetect();
+  const openFile = useCallback(
+    async (file: File) => {
+      setSelectedIndex(-1);
+      setExportError(null);
+      clearDetectResult();
+      await loadFile(file);
+    },
+    [clearDetectResult, loadFile],
+  );
+
+  useEffect(() => {
+    openFileRef.current = (file) => {
+      // A paste is a single image, so any "first file only" notice is stale.
+      setNotice(null);
+      void openFile(file);
+    };
+  }, [openFile]);
 
   const runAutoDetect = useCallback(async () => {
     const found = await runDetect(canvasRef.current);
@@ -94,14 +126,16 @@ export default function Redactor() {
     onError: setExportError,
   });
 
-  const openFile = useCallback(
-    async (file: File) => {
-      await loadFile(file);
-      setSelectedIndex(-1);
-      setExportError(null);
-      clearDetectResult();
+  const loadFromList = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) {
+        return;
+      }
+      // Only the first file is opened. Say so rather than dropping the rest silently.
+      setNotice(files.length > 1 ? MULTI_FILE_NOTICE : null);
+      void openFile(files[0]);
     },
-    [clearDetectResult, loadFile],
+    [openFile],
   );
 
   const startOver = useCallback(() => {
@@ -109,26 +143,32 @@ export default function Redactor() {
     resetHistory();
     setSelectedIndex(-1);
     setExportError(null);
+    setNotice(null);
   }, [reset, resetHistory]);
 
   const onDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
+    (event: React.DragEvent<HTMLElement>) => {
       event.preventDefault();
       setDragging(false);
-      const file = event.dataTransfer.files?.[0];
-      if (file) {
-        void openFile(file);
-      }
+      loadFromList(event.dataTransfer.files);
     },
-    [openFile],
+    [loadFromList],
   );
 
   const dragProps = {
-    onDragOver: (event: React.DragEvent<HTMLDivElement>) => {
+    onDragOver: (event: React.DragEvent<HTMLElement>) => {
       event.preventDefault();
       setDragging(true);
     },
-    onDragLeave: () => setDragging(false),
+    // dragleave also fires when the pointer crosses onto a child, so ignore
+    // those or the highlight flickers as soon as the cursor touches the text.
+    onDragLeave: (event: React.DragEvent<HTMLElement>) => {
+      const next = event.relatedTarget as Node | null;
+      if (next && event.currentTarget.contains(next)) {
+        return;
+      }
+      setDragging(false);
+    },
     onDrop,
   };
 
@@ -136,16 +176,18 @@ export default function Redactor() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Visually hidden: the drop-zone button below opens it. Keeping the input
+          in the DOM preserves the native picker; aria-hidden + tabIndex={-1}
+          avoids a second, invisible tab stop. */}
       <input
+        ref={fileInputRef}
         type="file"
         accept="image/png,image/jpeg,image/webp"
-        aria-label="Choose an image to redact"
-        className="block w-full text-sm text-neutral-700 file:mr-3 file:rounded-md file:border-0 file:bg-neutral-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-neutral-700"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="sr-only"
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) {
-            void openFile(file);
-          }
+          loadFromList(event.target.files);
           event.target.value = "";
         }}
       />
@@ -156,6 +198,15 @@ export default function Redactor() {
           className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           {message}
+        </p>
+      ) : null}
+
+      {notice ? (
+        <p
+          role="status"
+          className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          {notice}
         </p>
       ) : null}
 
@@ -192,21 +243,30 @@ export default function Redactor() {
       ) : (
         <div
           {...dragProps}
-          className={`flex min-h-56 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-6 py-12 text-center ${
+          className={`rounded-lg border-2 border-dashed transition-colors ${
             dragging
               ? "border-neutral-900 bg-neutral-100"
               : "border-neutral-300 bg-neutral-50"
           }`}
         >
-          <p className="text-base font-medium text-neutral-900">
-            Drop an image here
-          </p>
-          <p className="text-sm text-neutral-600">
-            PNG, JPEG, or WebP. Up to {formatBytes(MAX_FILE_BYTES)} and 40
-            million pixels.
-          </p>
-          <p className="text-sm text-neutral-600">
-            You can also paste with Ctrl/Cmd+V.
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-md px-4 py-10 text-center transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+          >
+            <span className="text-base font-medium text-neutral-900">
+              Drop an image here, or click to choose one
+            </span>
+            <span className="text-sm text-neutral-600">
+              PNG, JPEG, or WebP. Up to {formatBytes(MAX_FILE_BYTES)} and 40
+              million pixels.
+            </span>
+            <span className="text-sm text-neutral-600">
+              You can also paste with Ctrl/Cmd+V.
+            </span>
+          </button>
+          <p className="border-t border-neutral-200 px-4 pb-3 pt-3 text-center text-sm leading-relaxed text-neutral-600">
+            Your image never leaves this browser tab. Nothing is uploaded.
           </p>
         </div>
       )}
