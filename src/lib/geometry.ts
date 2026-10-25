@@ -1,3 +1,5 @@
+import type { FillStyle } from "@/lib/image";
+
 export type Rect = {
   x: number;
   y: number;
@@ -7,6 +9,16 @@ export type Rect = {
   label?: string;
   /** True when the box was produced by OCR rather than drawn by hand. */
   auto?: boolean;
+  /**
+   * Per-box fill override. When absent the box follows the toolbar default, so
+   * changing that global still affects every box the user never customised.
+   */
+  style?: FillStyle;
+  /**
+   * True when the user switched redaction off for this box. The box stays on
+   * the canvas as a visual marker but contributes nothing to the export.
+   */
+  skip?: boolean;
 };
 
 function clamp(value: number, min: number, max: number): number {

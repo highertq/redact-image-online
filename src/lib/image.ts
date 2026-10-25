@@ -73,6 +73,23 @@ export function outputFileName(sourceName: string): string {
 }
 
 /**
+ * Resolves the fill style for one box: its own override if it has one, otherwise
+ * the toolbar default. Kept as a function so the inheritance rule lives in a
+ * single testable place instead of being repeated at every call site.
+ */
+export function resolveStyle(rect: Rect, fallback: FillStyle): FillStyle {
+  return rect.style ?? fallback;
+}
+
+/**
+ * True when the box must be painted into the export. A skipped box is a marker
+ * on the editing canvas only — the exported PNG keeps the original pixels there.
+ */
+export function isRedacted(rect: Rect): boolean {
+  return rect.skip !== true;
+}
+
+/**
  * Paints one redaction rect. Pixelate samples the source first, then covers the
  * area with opaque blocks so nothing survives underneath. `blockSize` is in
  * image pixels and never drops below the 12 px floor.

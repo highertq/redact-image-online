@@ -5,9 +5,11 @@ import { useCallback } from "react";
 import type { Rect } from "@/lib/geometry";
 import type { LoadedImage } from "@/hooks/useImageLoader";
 import {
+  isRedacted,
   outputFileName,
   paintRedaction,
   pixelateBlockSize,
+  resolveStyle,
   type FillStyle,
 } from "@/lib/image";
 
@@ -46,7 +48,12 @@ export default function useExportPng({
     ctx.drawImage(image.bitmap, 0, 0, image.width, image.height);
     const block = pixelateBlockSize(image.width, image.height);
     for (const rect of rects) {
-      paintRedaction(ctx, image.bitmap, rect, fillStyle, block);
+      // A skipped box is an editing marker only: the exported PNG must keep the
+      // original pixels there, so it is not painted at all.
+      if (!isRedacted(rect)) {
+        continue;
+      }
+      paintRedaction(ctx, image.bitmap, rect, resolveStyle(rect, fillStyle), block);
     }
 
     const blob = await new Promise<Blob | null>((resolve) => {

@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_FILE_BYTES,
   MAX_PIXELS,
+  isRedacted,
   outputFileName,
   pixelateBlockSize,
+  resolveStyle,
   validateDimensions,
   validateFileMeta,
   MIN_PIXELATE_BLOCK,
@@ -93,5 +95,40 @@ describe("outputFileName", () => {
   it("falls back to image when the name is unusable", () => {
     expect(outputFileName("")).toBe("redacted-image.png");
     expect(outputFileName(".png")).toBe("redacted-image.png");
+  });
+});
+
+describe("resolveStyle", () => {
+  const base = { x: 0, y: 0, w: 10, h: 10 };
+
+  it("falls back to the toolbar default when the box has no override", () => {
+    expect(resolveStyle(base, "black")).toBe("black");
+    expect(resolveStyle(base, "pixelate")).toBe("pixelate");
+  });
+
+  it("prefers the box's own style when it has one", () => {
+    expect(resolveStyle({ ...base, style: "white" }, "black")).toBe("white");
+    expect(resolveStyle({ ...base, style: "pixelate" }, "black")).toBe("pixelate");
+  });
+
+  it("treats an explicit black override as a real choice", () => {
+    // The user picked black even though the default is white; it must stick.
+    expect(resolveStyle({ ...base, style: "black" }, "white")).toBe("black");
+  });
+});
+
+describe("isRedacted", () => {
+  const base = { x: 0, y: 0, w: 10, h: 10 };
+
+  it("redacts by default", () => {
+    expect(isRedacted(base)).toBe(true);
+  });
+
+  it("does not redact when skip is true", () => {
+    expect(isRedacted({ ...base, skip: true })).toBe(false);
+  });
+
+  it("redacts when skip is explicitly false", () => {
+    expect(isRedacted({ ...base, skip: false })).toBe(true);
   });
 });

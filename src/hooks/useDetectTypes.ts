@@ -68,17 +68,30 @@ export default function useDetectTypes(
         if (previous.length === 0) {
           return previous;
         }
-        const visible = new Set(current.map(rectKey));
-        // Only boxes whose type is still enabled can be judged "gone". A box
-        // missing because its chip is off is hidden on purpose and must stay in
-        // the pool, otherwise deleting one manual box would wipe a whole type.
-        const pruned = previous.filter(
-          (rect) =>
-            visible.has(rectKey(rect)) ||
-            rect.label === undefined ||
-            !enabled.includes(rect.label),
-        );
-        return pruned.length === previous.length ? previous : pruned;
+        const byKey = new Map(current.map((rect) => [rectKey(rect), rect]));
+        let changed = false;
+
+        const next = previous.flatMap((rect) => {
+          const live = byKey.get(rectKey(rect));
+          if (live) {
+            // The box is still on the canvas. Adopt its current appearance, so
+            // a style or skip change survives a chip off/on round trip.
+            if (live !== rect && (live.style !== rect.style || live.skip !== rect.skip)) {
+              changed = true;
+              return [{ ...rect, style: live.style, skip: live.skip }];
+            }
+            return [rect];
+          }
+          // Missing on purpose because its chip is off: keep it pooled.
+          if (rect.label === undefined || !enabled.includes(rect.label)) {
+            return [rect];
+          }
+          // Still enabled but gone from the canvas: the user deleted it.
+          changed = true;
+          return [];
+        });
+
+        return changed ? next : previous;
       });
     },
     [enabled],

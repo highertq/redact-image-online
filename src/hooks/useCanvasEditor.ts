@@ -11,6 +11,10 @@ const OUTLINE_SELECTED = "rgba(59, 130, 246, 1)";
 const GHOST_FILL = "rgba(239, 68, 68, 0.2)";
 const LABEL_BG = "rgba(185, 28, 28, 0.95)";
 const LABEL_BG_SELECTED = "rgba(37, 99, 235, 0.95)";
+// A skipped box is a marker, not a redaction: grey and empty, so the editing
+// canvas shows exactly what the export will contain.
+const OUTLINE_SKIPPED = "rgba(115, 115, 115, 0.9)";
+const LABEL_BG_SKIPPED = "rgba(82, 82, 82, 0.95)";
 
 type Options = {
   image: LoadedImage | null;
@@ -18,6 +22,11 @@ type Options = {
   selectedIndex: number;
   onAdd: (rect: Rect) => void;
   onSelect: (index: number) => void;
+  /**
+   * Fires when a box is clicked, with its position in viewport coordinates so
+   * the owner can anchor an editor panel to it.
+   */
+  onPick?: (index: number, anchor: { left: number; top: number; width: number; height: number }) => void;
   /**
    * When false the canvas ignores pointers entirely and stops capturing touch
    * gestures, so the page scrolls normally. Used by the mobile Scroll mode.
@@ -47,6 +56,7 @@ export default function useCanvasEditor({
   onAdd,
   onSelect,
   interactive = true,
+  onPick,
 }: Options): CanvasEditor {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -88,11 +98,18 @@ export default function useCanvasEditor({
       }
       const isGhost = activeGhost !== null && index === boxes.length - 1;
       const isSelected = !isGhost && index === selectedIndex;
+      const isSkipped = !isGhost && rect.skip === true;
 
-      ctx.fillStyle = GHOST_FILL;
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      if (!isSkipped) {
+        ctx.fillStyle = GHOST_FILL;
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      }
       ctx.lineWidth = line;
-      ctx.strokeStyle = isSelected ? OUTLINE_SELECTED : OUTLINE;
+      ctx.strokeStyle = isSelected
+        ? OUTLINE_SELECTED
+        : isSkipped
+          ? OUTLINE_SKIPPED
+          : OUTLINE;
       ctx.setLineDash(isSelected ? [] : [line * 3, line * 2]);
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
       ctx.setLineDash([]);
@@ -111,7 +128,11 @@ export default function useCanvasEditor({
         const labelX = rect.x;
         const labelY = rect.y - boxH - line;
 
-        ctx.fillStyle = isSelected ? LABEL_BG_SELECTED : LABEL_BG;
+        ctx.fillStyle = isSelected
+          ? LABEL_BG_SELECTED
+          : isSkipped
+            ? LABEL_BG_SKIPPED
+            : LABEL_BG;
         ctx.fillRect(labelX, labelY, boxW, boxH);
         ctx.fillStyle = "#ffffff";
         ctx.textBaseline = "top";
@@ -141,6 +162,27 @@ export default function useCanvasEditor({
     [image],
   );
 
+  // Converts a box from image space to viewport coordinates, which is what a
+  // fixed-position panel needs.
+  const toViewportRect = useCallback(
+    (rect: Rect) => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return { left: 0, top: 0, width: 0, height: 0 };
+      }
+      const box = canvas.getBoundingClientRect();
+      const scaleX = box.width / canvas.width;
+      const scaleY = box.height / canvas.height;
+      return {
+        left: box.left + rect.x * scaleX,
+        top: box.top + rect.y * scaleY,
+        width: rect.w * scaleX,
+        height: rect.h * scaleY,
+      };
+    },
+    [],
+  );
+
   const onPointerDown = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
       if (!image || !interactive) {
@@ -150,14 +192,19 @@ export default function useCanvasEditor({
       const hit = hitTest(rects, point.x, point.y);
       if (hit >= 0) {
         onSelect(hit);
+        // Report the hit as well as selecting it: the owner opens an editor
+        // anchored to this box, and only the canvas knows the screen position.
+        onPick?.(hit, toViewportRect(rects[hit]));
         return;
       }
+      // Clicking empty canvas deselects and closes any open editor.
       onSelect(-1);
+      onPick?.(-1, { left: 0, top: 0, width: 0, height: 0 });
       event.currentTarget.setPointerCapture(event.pointerId);
       startRef.current = point;
       setGhost({ x: point.x, y: point.y, w: 0, h: 0 });
     },
-    [image, interactive, onSelect, rects, toImagePoint],
+    [image, interactive, onPick, onSelect, rects, toImagePoint, toViewportRect],
   );
 
   const onPointerMove = useCallback(

@@ -2,16 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import BoxPopover from "@/components/BoxPopover";
+import EditorStatus from "@/components/EditorStatus";
 import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
+import ImageIntake from "@/components/ImageIntake";
+import useActiveBox, { type BoxPatch } from "@/hooks/useActiveBox";
 import useAutoDetect from "@/hooks/useAutoDetect";
 import useCanvasEditor from "@/hooks/useCanvasEditor";
 import useEditorShortcuts from "@/hooks/useEditorShortcuts";
 import useExportPng from "@/hooks/useExportPng";
+import useFileDrop from "@/hooks/useFileDrop";
 import useImageLoader from "@/hooks/useImageLoader";
 import useIsCoarsePointer from "@/hooks/useIsCoarsePointer";
 import useDetectTypes from "@/hooks/useDetectTypes";
 import useRectHistory from "@/hooks/useRectHistory";
-import { MAX_FILE_BYTES, formatBytes, type FillStyle } from "@/lib/image";
+import type { FillStyle } from "@/lib/image";
 import type { Rect } from "@/lib/geometry";
 
 const MULTI_FILE_NOTICE = "Only the first image was opened.";
@@ -21,7 +26,7 @@ export default function Redactor() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [fillStyle, setFillStyle] = useState<FillStyle>("black");
   const [exportError, setExportError] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
+
   const [notice, setNotice] = useState<string | null>(null);
   const [startOverArmed, setStartOverArmed] = useState(false);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("draw");
@@ -64,12 +69,46 @@ export default function Redactor() {
 
   const detectTypes = useDetectTypes(rects, commit);
 
+  const activeBox = useActiveBox({
+    rects,
+    commit,
+    setSelectedIndex,
+    onRectsRemoved: detectTypes.syncPool,
+  });
+
+  // `useCanvasEditor` needs `onAdd`, but `onAdd` needs the canvas element to
+  // anchor a new box's editor. This ref breaks that cycle: it is filled in as
+  // soon as the editor returns, long before any pointer event can fire.
+  const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
+
+  const anchorForRect = useCallback((rect: Rect) => {
+    const canvas = canvasElementRef.current;
+    if (!canvas) {
+      return null;
+    }
+    const box = canvas.getBoundingClientRect();
+    const scaleX = box.width / canvas.width;
+    const scaleY = box.height / canvas.height;
+    return {
+      left: box.left + rect.x * scaleX,
+      top: box.top + rect.y * scaleY,
+      width: rect.w * scaleX,
+      height: rect.h * scaleY,
+    };
+  }, []);
+
   const onAdd = useCallback(
     (rect: Rect) => {
       commit([...rects, rect]);
       setSelectedIndex(rects.length);
+      // New boxes open their editor right away: the first thing a user wants
+      // after drawing is to confirm the style or switch the box off.
+      const anchor = anchorForRect(rect);
+      if (anchor) {
+        activeBox.openNewest(rects.length, anchor);
+      }
     },
-    [commit, rects],
+    [activeBox, anchorForRect, commit, rects],
   );
 
   const { canvasRef, handlers } = useCanvasEditor({
@@ -78,8 +117,30 @@ export default function Redactor() {
     selectedIndex,
     onAdd,
     onSelect: setSelectedIndex,
+    onPick: activeBox.open,
     interactive,
   });
+
+  useEffect(() => {
+    canvasElementRef.current = canvasRef.current;
+  });
+
+  // Style and skip changes must reach the type-filter pool too, otherwise
+  // toggling a chip off and on would restore the box with its old appearance.
+  const patchActiveBox = useCallback(
+    (changes: BoxPatch) => {
+      const index = activeBox.active?.index;
+      if (index === undefined) {
+        return;
+      }
+      const updated = rects.map((rect, i) =>
+        i === index ? { ...rect, ...changes } : rect,
+      );
+      activeBox.patch(changes);
+      detectTypes.syncPool(updated);
+    },
+    [activeBox, detectTypes, rects],
+  );
 
   const openFile = useCallback(
     async (file: File) => {
@@ -205,75 +266,19 @@ export default function Redactor() {
     startOver();
   }, [startOver, startOverArmed]);
 
-  const onDrop = useCallback(
-    (event: React.DragEvent<HTMLElement>) => {
-      event.preventDefault();
-      setDragging(false);
-      loadFromList(event.dataTransfer.files);
-    },
-    [loadFromList],
-  );
-
-  const dragProps = {
-    onDragOver: (event: React.DragEvent<HTMLElement>) => {
-      event.preventDefault();
-      setDragging(true);
-    },
-    // dragleave also fires when the pointer crosses onto a child, so ignore
-    // those or the highlight flickers as soon as the cursor touches the text.
-    onDragLeave: (event: React.DragEvent<HTMLElement>) => {
-      const next = event.relatedTarget as Node | null;
-      if (next && event.currentTarget.contains(next)) {
-        return;
-      }
-      setDragging(false);
-    },
-    onDrop,
-  };
+  const { dragging, dragProps } = useFileDrop(loadFromList);
 
   const message = loadError ?? exportError;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Visually hidden: the drop-zone button below opens it. Keeping the input
-          in the DOM preserves the native picker; aria-hidden + tabIndex={-1}
-          avoids a second, invisible tab stop. */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        aria-hidden="true"
-        tabIndex={-1}
-        className="sr-only"
-        onChange={(event) => {
-          loadFromList(event.target.files);
-          event.target.value = "";
-        }}
+      <EditorStatus
+        error={message}
+        notice={notice}
+        busy={busy}
+        inputRef={fileInputRef}
+        onFiles={loadFromList}
       />
-
-      {message ? (
-        <p
-          role="alert"
-          className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800"
-        >
-          {message}
-        </p>
-      ) : null}
-
-      {notice ? (
-        <p
-          role="status"
-          className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900"
-        >
-          {notice}
-        </p>
-      ) : null}
-
-      {busy ? (
-        <p role="status" className="text-sm text-neutral-600">
-          Loading image…
-        </p>
-      ) : null}
 
       {image ? (
         <>
@@ -307,36 +312,30 @@ export default function Redactor() {
               {...handlers}
             />
           </div>
+          {activeBox.active && activeBox.rect ? (
+            <BoxPopover
+              // Keyed by index only: including coordinates would remount the
+              // panel on every patch, throwing away its measured position.
+              key={activeBox.active.index}
+              rect={activeBox.rect}
+              anchor={activeBox.active.anchor}
+              defaultStyle={fillStyle}
+              onToggleRedact={(nextSkipped) =>
+                patchActiveBox({ skip: nextSkipped })
+              }
+              onStyleChange={(style) => patchActiveBox({ style })}
+              onResetStyle={activeBox.resetStyle}
+              onDelete={activeBox.remove}
+              onClose={activeBox.close}
+            />
+          ) : null}
         </>
       ) : (
-        <div
-          {...dragProps}
-          className={`rounded-lg border-2 border-dashed transition-colors ${
-            dragging
-              ? "border-neutral-900 bg-neutral-100"
-              : "border-neutral-300 bg-neutral-50"
-          }`}
-        >
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex w-full flex-col items-center justify-center gap-3 rounded-md px-4 py-10 text-center transition-colors hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-          >
-            <span className="text-base font-medium text-neutral-900">
-              Drop an image here, or click to choose one
-            </span>
-            <span className="text-sm text-neutral-600">
-              PNG, JPEG, or WebP. Up to {formatBytes(MAX_FILE_BYTES)} and 40
-              million pixels.
-            </span>
-            <span className="text-sm text-neutral-600">
-              You can also paste with Ctrl/Cmd+V.
-            </span>
-          </button>
-          <p className="border-t border-neutral-200 px-4 pb-3 pt-3 text-center text-sm leading-relaxed text-neutral-600">
-            Your image never leaves this browser tab. Nothing is uploaded.
-          </p>
-        </div>
+        <ImageIntake
+          dragging={dragging}
+          dragProps={dragProps}
+          inputRef={fileInputRef}
+        />
       )}
 
       <EditorToolbar
