@@ -143,6 +143,13 @@ export const SSN: Scenario = {
         "No. There is no upload step, no server-side processing, and no storage. The image is decoded in the tab, and if you reload the page it is gone.",
     },
   ],
+  pillarLink: {
+    before:
+      "If the same screenshot also shows a card number or an address, you do not need to work through them one at a time. You can",
+    anchor: "redact image online",
+    after:
+      "with every box on a single canvas, and each one stays editable until you download.",
+  },
   related: ["redact-card-number", "redact-bank-statement", "redact-email-address"],
 };
 
@@ -289,6 +296,13 @@ export const CARD_NUMBER: Scenario = {
         "The tool exports PNG. Re-encoding from a canvas means the file is rebuilt rather than edited in place, and metadata from the source file is not carried across.",
     },
   ],
+  pillarLink: {
+    before:
+      "Card numbers rarely appear alone on a payment screenshot, so it is usually worth covering the expiry and the name in the same session. You can",
+    anchor: "redact image online",
+    after:
+      "in one pass, and the export is drawn on a fresh canvas so nothing is layered on top of the original.",
+  },
   related: ["redact-ssn", "redact-bank-statement", "redact-receipt"],
 };
 
@@ -436,5 +450,12 @@ export const EMAIL: Scenario = {
         "There is no limit in the interface. Very large images with a few hundred boxes will feel slower to redraw, since the canvas is repainted on each change.",
     },
   ],
+  pillarLink: {
+    before:
+      "An address is almost never the only thing on the page, which makes doing the whole screenshot at once worthwhile. You can",
+    anchor: "redact image online",
+    after:
+      "directly in the tab, with no list of addresses to paste into a form and no account to create.",
+  },
   related: ["redact-screenshot", "redact-card-number", "redact-ssn"],
 };

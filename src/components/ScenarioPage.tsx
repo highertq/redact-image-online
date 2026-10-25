@@ -144,6 +144,22 @@ export default function ScenarioPage({ scenario }: { scenario: Scenario }) {
         <Paragraphs body={scenario.detail.body} />
       </Section>
 
+      {/*
+        Contextual link to the homepage. It sits in the body flow rather than in
+        the footer so it reads as a real recommendation, and it passes consistent
+        keyword-bearing anchor text back to the pillar page.
+      */}
+      <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
+        {scenario.pillarLink.before}{" "}
+        <Link
+          href="/"
+          className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+        >
+          {scenario.pillarLink.anchor}
+        </Link>{" "}
+        {scenario.pillarLink.after}
+      </p>
+
       <Section heading="Frequently asked questions">
         <dl className="flex max-w-2xl flex-col divide-y divide-neutral-200">
           {scenario.faq.map((item) => (

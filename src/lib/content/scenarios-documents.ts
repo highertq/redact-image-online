@@ -162,7 +162,14 @@ export const SCREENSHOT: Scenario = {
         "Black is the default and the safest. White is useful on a dark-mode screenshot, where a black box can read as a UI element and confuse a reader about whether something was removed.",
     },
   ],
-  related: ["redact-email-address", "redact-receipt", "redact-bank-statement"],
+  pillarLink: {
+    before:
+      "Screenshots are the most common starting point, and the frame around the content is what usually leaks. If you want the general workflow before working through this checklist, you can",
+    anchor: "redact image online",
+    after:
+      "in four steps, starting with the corners rather than the body text.",
+  },
+  related: ["redact-email-address", "redact-receipt", "redact-bank-statement", "redact-invoice"],
 };
 
 export const BANK_STATEMENT: Scenario = {
@@ -311,7 +318,14 @@ export const BANK_STATEMENT: Scenario = {
         "No. There is no upload step and no server-side processing. The image is decoded in the browser tab and the download is created locally.",
     },
   ],
-  related: ["redact-receipt", "redact-card-number", "redact-ssn"],
+  pillarLink: {
+    before:
+      "Statements are usually submitted alongside other paperwork, and a PDF has to become an image before any of this works. If that conversion is the part you are unsure about, you can",
+    anchor: "redact image online",
+    after:
+      "after rasterizing the page, which is why the order matters more than the tool.",
+  },
+  related: ["redact-receipt", "redact-card-number", "redact-ssn", "redact-contract"],
 };
 
 export const RECEIPT: Scenario = {
@@ -467,5 +481,12 @@ export const RECEIPT: Scenario = {
         "A PNG at the original resolution. It is drawn on a fresh canvas and encoded from pixel data, so the file is rebuilt rather than edited in place.",
     },
   ],
-  related: ["redact-bank-statement", "redact-card-number", "redact-screenshot"],
+  pillarLink: {
+    before:
+      "A receipt is one of the easier documents to clear, because the fields cluster in the same two blocks every time. If you are working through a batch of paperwork rather than a single receipt, you can",
+    anchor: "redact image online",
+    after:
+      "one image at a time with no per-export cost and no account to manage.",
+  },
+  related: ["redact-bank-statement", "redact-card-number", "redact-screenshot", "redact-invoice"],
 };
