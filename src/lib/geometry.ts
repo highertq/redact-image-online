@@ -3,6 +3,10 @@ export type Rect = {
   y: number;
   w: number;
   h: number;
+  /** PII type label when the box came from auto-detection. */
+  label?: string;
+  /** True when the box was produced by OCR rather than drawn by hand. */
+  auto?: boolean;
 };
 
 function clamp(value: number, min: number, max: number): number {

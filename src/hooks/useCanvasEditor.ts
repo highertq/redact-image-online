@@ -9,6 +9,8 @@ const MIN_DRAG_PX = 8;
 const OUTLINE = "rgba(239, 68, 68, 0.9)";
 const OUTLINE_SELECTED = "rgba(59, 130, 246, 1)";
 const GHOST_FILL = "rgba(239, 68, 68, 0.2)";
+const LABEL_BG = "rgba(185, 28, 28, 0.95)";
+const LABEL_BG_SELECTED = "rgba(37, 99, 235, 0.95)";
 
 type Options = {
   image: LoadedImage | null;
@@ -76,6 +78,27 @@ export default function useCanvasEditor({
       ctx.setLineDash(isSelected ? [] : [line * 3, line * 2]);
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
       ctx.setLineDash([]);
+
+      if (rect.label) {
+        // The label lives in image space, so its font is scaled by 1/scale to
+        // stay readable no matter how far the canvas is shrunk on screen.
+        const fontSize = 12 / scale;
+        const padX = 4 / scale;
+        const padY = 3 / scale;
+        ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`;
+        const label = rect.label;
+        const textWidth = ctx.measureText(label).width;
+        const boxW = textWidth + padX * 2;
+        const boxH = fontSize + padY * 2;
+        const labelX = rect.x;
+        const labelY = rect.y - boxH - line;
+
+        ctx.fillStyle = isSelected ? LABEL_BG_SELECTED : LABEL_BG;
+        ctx.fillRect(labelX, labelY, boxW, boxH);
+        ctx.fillStyle = "#ffffff";
+        ctx.textBaseline = "top";
+        ctx.fillText(label, labelX + padX, labelY + padY);
+      }
     }
   }, [ghost, image, rects, selectedIndex]);
 

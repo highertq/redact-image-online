@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import EditorToolbar from "@/components/EditorToolbar";
+import useAutoDetect from "@/hooks/useAutoDetect";
 import useCanvasEditor from "@/hooks/useCanvasEditor";
 import useEditorShortcuts from "@/hooks/useEditorShortcuts";
 import useExportPng from "@/hooks/useExportPng";
@@ -43,6 +44,24 @@ export default function Redactor() {
     onSelect: setSelectedIndex,
   });
 
+  const {
+    running: detecting,
+    progress: detectProgress,
+    result: detectResult,
+    run: runDetect,
+    clearResult: clearDetectResult,
+  } = useAutoDetect();
+
+  const runAutoDetect = useCallback(async () => {
+    const found = await runDetect(canvasRef.current);
+    if (found.length === 0) {
+      return;
+    }
+    // Auto boxes join the same history stack, so undo removes them in one step.
+    commit([...rects, ...found]);
+    setSelectedIndex(-1);
+  }, [canvasRef, commit, rects, runDetect]);
+
   const removeSelected = useCallback(() => {
     if (selectedIndex < 0) {
       return;
@@ -80,8 +99,9 @@ export default function Redactor() {
       await loadFile(file);
       setSelectedIndex(-1);
       setExportError(null);
+      clearDetectResult();
     },
-    [loadFile],
+    [clearDetectResult, loadFile],
   );
 
   const startOver = useCallback(() => {
@@ -209,6 +229,12 @@ export default function Redactor() {
         onStartOver={startOver}
         onDownload={() => {
           void download();
+        }}
+        detecting={detecting}
+        detectProgress={detectProgress}
+        detectResult={detectResult}
+        onAutoDetect={() => {
+          void runAutoDetect();
         }}
       />
 

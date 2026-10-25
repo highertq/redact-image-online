@@ -22,6 +22,10 @@ type ToolbarProps = {
   onClearAll: () => void;
   onStartOver: () => void;
   onDownload: () => void;
+  detecting: boolean;
+  detectProgress: number;
+  detectResult: string | null;
+  onAutoDetect: () => void;
 };
 
 const buttonClass =
@@ -41,6 +45,10 @@ export default function EditorToolbar({
   onClearAll,
   onStartOver,
   onDownload,
+  detecting,
+  detectProgress,
+  detectResult,
+  onAutoDetect,
 }: ToolbarProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -75,6 +83,41 @@ export default function EditorToolbar({
           text.
         </p>
       </fieldset>
+
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={onAutoDetect}
+          disabled={!hasImage || detecting}
+          aria-label="Auto-detect sensitive text"
+          aria-busy={detecting}
+          className="min-h-11 w-full rounded-md border border-neutral-900 bg-neutral-50 px-3 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 sm:w-auto"
+        >
+          {detecting
+            ? `Scanning for text… ${Math.round(detectProgress * 100)}%`
+            : "Auto-detect sensitive text"}
+        </button>
+        {detecting ? (
+          <div
+            role="progressbar"
+            aria-label="Text detection progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(detectProgress * 100)}
+            className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-neutral-200"
+          >
+            <div
+              className="h-full rounded-full bg-neutral-900 transition-[width] duration-200"
+              style={{ width: `${Math.round(detectProgress * 100)}%` }}
+            />
+          </div>
+        ) : null}
+        {detectResult && !detecting ? (
+          <p role="status" className="text-sm leading-relaxed text-neutral-700">
+            {detectResult}
+          </p>
+        ) : null}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <button
