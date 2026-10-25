@@ -1,8 +1,10 @@
 "use client";
 
 import DetectStatus from "@/components/DetectStatus";
+import TypeFilter from "@/components/TypeFilter";
 import type { DetectMessage } from "@/hooks/useAutoDetect";
 import type { OcrStage } from "@/lib/ocr";
+import type { TypeChip } from "@/lib/detect-types";
 import type { FillStyle } from "@/lib/image";
 
 const STYLE_OPTIONS: { value: FillStyle; label: string }[] = [
@@ -43,6 +45,9 @@ type ToolbarProps = {
   detectMessage: DetectMessage | null;
   detectHasRun: boolean;
   onAutoDetect: () => void;
+  typeChips: TypeChip[];
+  enabledTypes: readonly string[];
+  onToggleType: (type: string) => void;
   showModeSwitch: boolean;
   canvasMode: CanvasMode;
   onCanvasModeChange: (mode: CanvasMode) => void;
@@ -77,6 +82,9 @@ export default function EditorToolbar({
   detectMessage,
   detectHasRun,
   onAutoDetect,
+  typeChips,
+  enabledTypes,
+  onToggleType,
   showModeSwitch,
   canvasMode,
   onCanvasModeChange,
@@ -162,6 +170,11 @@ export default function EditorToolbar({
           message={detectMessage}
           hasRun={detectHasRun}
           onRetry={onAutoDetect}
+        />
+        <TypeFilter
+          chips={typeChips}
+          enabled={enabledTypes}
+          onToggle={onToggleType}
         />
       </div>
 

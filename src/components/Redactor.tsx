@@ -9,6 +9,7 @@ import useEditorShortcuts from "@/hooks/useEditorShortcuts";
 import useExportPng from "@/hooks/useExportPng";
 import useImageLoader from "@/hooks/useImageLoader";
 import useIsCoarsePointer from "@/hooks/useIsCoarsePointer";
+import useDetectTypes from "@/hooks/useDetectTypes";
 import useRectHistory from "@/hooks/useRectHistory";
 import { MAX_FILE_BYTES, formatBytes, type FillStyle } from "@/lib/image";
 import type { Rect } from "@/lib/geometry";
@@ -61,6 +62,8 @@ export default function Redactor() {
     reset: resetHistory,
   } = useRectHistory();
 
+  const detectTypes = useDetectTypes(rects, commit);
+
   const onAdd = useCallback(
     (rect: Rect) => {
       commit([...rects, rect]);
@@ -82,12 +85,14 @@ export default function Redactor() {
     async (file: File) => {
       setSelectedIndex(-1);
       setExportError(null);
-      // A freshly opened image invalidates any pending "confirm start over".
+      // A freshly opened image invalidates any pending "confirm start over",
+      // and its boxes/chips must not carry over from the previous one.
       setStartOverArmed(false);
       clearDetectResult();
+      detectTypes.reset();
       await loadFile(file);
     },
-    [clearDetectResult, loadFile],
+    [clearDetectResult, detectTypes, loadFile],
   );
 
   useEffect(() => {
@@ -105,18 +110,25 @@ export default function Redactor() {
     if (found.length === 0) {
       return;
     }
+    // The pool must hold everything detection produced, not just what was new:
+    // chip counts and restore-after-uncheck both read from it.
+    detectTypes.register(found);
     // Auto boxes join the same history stack, so undo removes them in one step.
     commit([...rects, ...found]);
     setSelectedIndex(-1);
-  }, [canvasRef, commit, rects, runDetect]);
+  }, [canvasRef, commit, detectTypes, rects, runDetect]);
 
   const removeSelected = useCallback(() => {
     if (selectedIndex < 0) {
       return;
     }
-    commit(rects.filter((_, i) => i !== selectedIndex));
+    const next = rects.filter((_, i) => i !== selectedIndex);
+    // Sync before committing: an auto box the user deleted must not linger in
+    // the restore pool, or the next chip toggle would bring it back.
+    detectTypes.syncPool(next);
+    commit(next);
     setSelectedIndex(-1);
-  }, [commit, rects, selectedIndex]);
+  }, [commit, detectTypes, rects, selectedIndex]);
 
   const undoAction = useCallback(() => {
     undo();
@@ -127,6 +139,12 @@ export default function Redactor() {
     redo();
     setSelectedIndex(-1);
   }, [redo]);
+
+  const clearAll = useCallback(() => {
+    detectTypes.syncPool([]);
+    commit([]);
+    setSelectedIndex(-1);
+  }, [commit, detectTypes]);
 
   useEditorShortcuts({
     onUndo: undoAction,
@@ -157,11 +175,12 @@ export default function Redactor() {
   const startOver = useCallback(() => {
     reset();
     resetHistory();
+    detectTypes.reset();
     setSelectedIndex(-1);
     setExportError(null);
     setNotice(null);
     setStartOverArmed(false);
-  }, [reset, resetHistory]);
+  }, [detectTypes, reset, resetHistory]);
 
   // Two-step confirm instead of window.confirm: the first click only arms the
   // button, a second click within the window commits. The timer is cleared on
@@ -331,10 +350,7 @@ export default function Redactor() {
         onUndo={undoAction}
         onRedo={redoAction}
         onRemoveSelected={removeSelected}
-        onClearAll={() => {
-          commit([]);
-          setSelectedIndex(-1);
-        }}
+        onClearAll={clearAll}
         onStartOver={requestStartOver}
         startOverArmed={startOverArmed}
         onDownload={() => {
@@ -348,6 +364,9 @@ export default function Redactor() {
         onAutoDetect={() => {
           void runAutoDetect();
         }}
+        typeChips={detectTypes.chips}
+        enabledTypes={detectTypes.enabled}
+        onToggleType={detectTypes.toggle}
         showModeSwitch={isCoarsePointer}
         canvasMode={canvasMode}
         onCanvasModeChange={setCanvasMode}
