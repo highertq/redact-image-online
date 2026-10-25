@@ -320,10 +320,10 @@ export const BANK_STATEMENT: Scenario = {
   ],
   pillarLink: {
     before:
-      "Statements are usually submitted alongside other paperwork, and a PDF has to become an image before any of this works. If that conversion is the part you are unsure about, you can",
+      "Statements are usually submitted alongside other paperwork, and a PDF has to become an image before any of this works. The order matters more than the tool, and the",
     anchor: "redact image online",
     after:
-      "after rasterizing the page, which is why the order matters more than the tool.",
+      "walkthrough starts with rasterizing the page for exactly that reason.",
   },
   related: ["redact-receipt", "redact-card-number", "redact-ssn", "redact-contract"],
 };
@@ -483,10 +483,10 @@ export const RECEIPT: Scenario = {
   ],
   pillarLink: {
     before:
-      "A receipt is one of the easier documents to clear, because the fields cluster in the same two blocks every time. If you are working through a batch of paperwork rather than a single receipt, you can",
+      "A receipt is one of the easier documents to clear, because the fields cluster in the same two blocks every time. If you are working through a batch of paperwork rather than a single receipt, the",
     anchor: "redact image online",
     after:
-      "one image at a time with no per-export cost and no account to manage.",
+      "tool runs one image at a time with no per-export cost and no account to manage.",
   },
   related: ["redact-bank-statement", "redact-card-number", "redact-screenshot", "redact-invoice"],
 };

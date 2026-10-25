@@ -73,6 +73,38 @@ describe("pillar internal linking", () => {
       expect(scenario.pillarLink.after.length).toBeGreaterThan(20);
     }
   });
+
+  it("never puts a clause opener straight after the anchor", () => {
+    // "you can redact image online after rasterizing the page" reads as broken
+    // English, and the anchor is the only part that cannot move. Anything that
+    // begins a subordinate clause has to sit before the link, not after it.
+    const badOpeners = [
+      "after ",
+      "before ",
+      "because ",
+      "although ",
+      "when ",
+      "while ",
+      "which ",
+      "that ",
+      "if ",
+    ];
+    for (const scenario of SCENARIOS) {
+      const tail = scenario.pillarLink.after.trimStart().toLowerCase();
+      for (const opener of badOpeners) {
+        expect(
+          tail.startsWith(opener),
+          `${scenario.slug} after-text starts with "${opener}": "${tail.slice(0, 60)}"`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("keeps the anchor a bare keyword phrase with no trailing punctuation", () => {
+    for (const scenario of SCENARIOS) {
+      expect(scenario.pillarLink.anchor).toBe(PILLAR_ANCHOR_PREFIX);
+    }
+  });
 });
 
 describe("metadata constraints", () => {

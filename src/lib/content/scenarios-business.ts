@@ -330,10 +330,10 @@ export const CONTRACT: Scenario = {
   ],
   pillarLink: {
     before:
-      "Contracts, statements, and invoices share the same failure mode: a redaction applied to a PDF instead of to the pixels. If you want the underlying explanation first, you can",
+      "Contracts, statements, and invoices share the same failure mode: a redaction applied to a PDF instead of to the pixels. The underlying explanation is on the",
     anchor: "redact image online",
     after:
-      "after reading why the order of operations decides whether the redaction holds.",
+      "page, and it is worth reading before you start on a document of this kind.",
   },
   related: ["redact-invoice", "redact-signature", "redact-bank-statement"],
 };
