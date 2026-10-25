@@ -6,4 +6,4 @@ export const SITE_URL = (
 
 export const IS_LIVE = Boolean(process.env.NEXT_PUBLIC_SITE_URL);
 
-export const CONTACT_EMAIL = "";
+export const CONTACT_EMAIL = "jyao10086@gmail.com";

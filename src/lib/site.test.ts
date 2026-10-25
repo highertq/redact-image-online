@@ -36,7 +36,7 @@ describe("site constants", () => {
     );
   });
 
-  it("leaves the contact email empty for now", () => {
-    expect(CONTACT_EMAIL).toBe("");
+  it("exposes a contact email", () => {
+    expect(CONTACT_EMAIL).toBe("jyao10086@gmail.com");
   });
 });
