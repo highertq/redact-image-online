@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Redactor from "@/components/Redactor";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
-const PAGE_TITLE = `Redact Image Online Free – No Upload, Private | ${SITE_NAME}`;
+const PAGE_TITLE = `Redact Image Online – Free, No Upload | ${SITE_NAME}`;
 const PAGE_DESCRIPTION =
   "Redact image online free, right in your browser. Draw a box to hide emails, phone numbers, cards, or SSNs, then download a PNG. Nothing is uploaded.";
 

@@ -1,4 +1,4 @@
-# RedactPic
+# RedactMy.pics
 
 A free, browser-only tool for redacting private details in an image before you
 share it. The image is decoded and redacted in the tab, and the export is a
@@ -25,9 +25,11 @@ There is no database, no authentication, no API route, and no server action.
 
 ## Before going live
 
-- [ ] Set `NEXT_PUBLIC_SITE_URL` to the real origin (for example
-      `https://redactpic.example`). Until this is set, `IS_LIVE` is false, the
-      site sends `noindex, nofollow`, and `robots.txt` disallows everything.
+- [ ] Set `NEXT_PUBLIC_SITE_URL` to the deployed origin (for example
+      `https://redactmy.pics`). The code already defaults to
+      `https://redactmy.pics` when this is unset, but until the variable is
+      defined `IS_LIVE` stays false, the site sends `noindex, nofollow`, and
+      `robots.txt` disallows everything.
 - [ ] Fill in `CONTACT_EMAIL` in `src/lib/site.ts` if you want a contact address
       to appear on the About and Privacy pages. Leave it empty to hide that line.
 - [ ] Bind the custom domain in Vercel and confirm HTTPS works on the apex and

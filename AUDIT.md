@@ -1,4 +1,4 @@
-# RedactPic Audit
+# RedactMy.pics Audit
 
 **Audit date:** 2026-10-25
 **Scope:** `src/`, `package.json`, production dependency tree

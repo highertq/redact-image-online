@@ -1,4 +1,4 @@
-# 项目：RedactPic — Redact Image Online
+# 项目：RedactMy.pics — Redact Image Online
 主关键词："redact image online"。网站所有用户可见文字一律使用英文。目标用户：需要在分享截图或照片前隐藏隐私信息的美国用户。
 ## 产品
 一个免费的纯浏览器工具。用户拖入、粘贴或选择一张图片，手动画框遮盖（或用自动识别找出文字类隐私），然后下载处理后的 PNG。
@@ -9,6 +9,7 @@
 ## 技术栈
 Next.js（App Router）+ TypeScript + Tailwind CSS，GitHub 托管，部署到 Vercel。无数据库、无登录、无 API 路由、无 server actions。OCR 用 tesseract.js，在浏览器里运行。纯函数用 vitest 测试。
 ## 站点常量
+生产域名：https://redactmy.pics
 品牌名、站点 URL、联系邮箱都集中放在 src/lib/site.ts，其他文件只能从这里引用，不得硬编码。
 ## 给 AI 的工作规则
 - 一次会话只做一个任务。做完、检查、提交，然后停止。
