@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RedactPic
 
-## Getting Started
+A free, browser-only tool for redacting private details in an image before you
+share it. The image is decoded and redacted in the tab, and the export is a
+freshly encoded PNG.
 
-First, run the development server:
+- No uploads, no server-side processing, no accounts.
+- Solid fill replaces pixels rather than blurring them.
+- The export is re-encoded from a canvas, so EXIF metadata is dropped.
+- Auto-detect reads text patterns (email, phone, SSN, card numbers, API keys)
+  using a text recognition library that runs locally.
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run lint
+npm run test
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Stack: Next.js (App Router) + TypeScript + Tailwind CSS, deployed on Vercel.
+There is no database, no authentication, no API route, and no server action.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Before going live
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] Set `NEXT_PUBLIC_SITE_URL` to the real origin (for example
+      `https://redactpic.example`). Until this is set, `IS_LIVE` is false, the
+      site sends `noindex, nofollow`, and `robots.txt` disallows everything.
+- [ ] Fill in `CONTACT_EMAIL` in `src/lib/site.ts` if you want a contact address
+      to appear on the About and Privacy pages. Leave it empty to hide that line.
+- [ ] Bind the custom domain in Vercel and confirm HTTPS works on the apex and
+      the `www` host.
+- [ ] Verify `/sitemap.xml` and `/robots.txt` on the live domain, then submit the
+      sitemap in Google Search Console.
