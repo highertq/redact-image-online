@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { OG_IMAGE } from "@/lib/metadata";
 import { CONTACT_EMAIL, SITE_NAME } from "@/lib/site";
 
 const LAST_UPDATED = "October 25, 2026";
@@ -15,6 +16,13 @@ export const metadata: Metadata = {
     url: "/privacy",
     siteName: SITE_NAME,
     type: "website",
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Privacy Policy | ${SITE_NAME}`,
+    description: `How ${SITE_NAME} handles your images and what stays on your device.`,
+    images: [OG_IMAGE.url],
   },
 };
 

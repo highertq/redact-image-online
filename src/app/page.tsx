@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import Redactor from "@/components/Redactor";
+import { GUIDES, guideHref } from "@/lib/content/guides-index";
+import { SCENARIOS, scenarioHref } from "@/lib/content/scenarios";
+import { OG_IMAGE } from "@/lib/metadata";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 const PAGE_TITLE = `Redact Image Online – Free, No Upload | ${SITE_NAME}`;
@@ -17,6 +21,13 @@ export const metadata: Metadata = {
     url: "/",
     siteName: SITE_NAME,
     type: "website",
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    images: [OG_IMAGE.url],
   },
 };
 
@@ -88,6 +99,19 @@ const FAQ = [
   },
 ];
 
+/**
+ * Homepage structured data.
+ *
+ * FAQPage markup is kept because the questions are genuinely answered on the
+ * page and the markup costs nothing, but Google retired FAQ rich results for
+ * all sites on 7 May 2026 — it no longer earns an expandable snippet, so it is
+ * not here as a CTR play. It stays machine-readable for other consumers.
+ *
+ * SoftwareApplication is emitted without `aggregateRating`. Google requires a
+ * rating OR a review for the software-app rich result, and this site has
+ * neither, so inventing one would break the structured data guidelines. The
+ * markup remains a valid description of the app without it.
+ */
 function buildJsonLd() {
   const software = {
     "@context": "https://schema.org",
@@ -102,6 +126,12 @@ function buildJsonLd() {
       price: "0",
       priceCurrency: "USD",
     },
+    featureList: [
+      "Runs entirely in the browser, no upload",
+      "Solid fill redaction that replaces pixels",
+      "Automatic detection of emails, phone numbers, SSNs, card numbers, IP addresses, and API keys",
+      "PNG export re-encoded from a canvas",
+    ],
   };
 
   const faq = {
@@ -141,6 +171,37 @@ export default function Home() {
           fresh PNG.
         </p>
         <Redactor />
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          What are you hiding?
+        </h2>
+        <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
+          The tool works the same way for everything, but what counts as
+          sensitive depends on the document. Each page below covers one case:
+          which fields matter, what the automatic detection will and will not
+          find, and where people usually miss something.
+        </p>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {SCENARIOS.map((item) => (
+            <li key={item.slug}>
+              <Link
+                href={scenarioHref(item.slug)}
+                className="flex h-full flex-col gap-1 rounded-lg border border-neutral-200 p-4 transition-colors hover:border-neutral-400"
+              >
+                <span className="text-base font-semibold text-neutral-900">
+                  {item.navLabel}
+                </span>
+                <span className="text-sm leading-relaxed text-neutral-600">
+                  {item.lede.length > 150
+                    ? `${item.lede.slice(0, 147).trimEnd()}…`
+                    : item.lede}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="flex flex-col gap-4">
@@ -289,6 +350,46 @@ export default function Home() {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Why a solid fill instead of a blur
+        </h2>
+        <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
+          A blur averages pixels and a solid fill replaces them. For short strings
+          like an account number, the difference decides whether the information
+          is gone or merely hard to read. These pages go into the detail,
+          including the cases where the usual advice is wrong.
+        </p>
+        <ul className="flex flex-col gap-2 text-sm">
+          {GUIDES.map((item) => (
+            <li key={item.slug}>
+              <Link
+                href={guideHref(item.slug)}
+                className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+              >
+                {item.h1}
+              </Link>
+            </li>
+          ))}
+          <li>
+            <Link
+              href="/methodology"
+              className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+            >
+              How auto-detect decides what to flag
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/security-audit"
+              className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+            >
+              What this tool sends, and what it does not
+            </Link>
+          </li>
+        </ul>
       </section>
     </div>
   );
