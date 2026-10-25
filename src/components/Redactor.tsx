@@ -2,17 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import EditorToolbar from "@/components/EditorToolbar";
+import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
 import useAutoDetect from "@/hooks/useAutoDetect";
 import useCanvasEditor from "@/hooks/useCanvasEditor";
 import useEditorShortcuts from "@/hooks/useEditorShortcuts";
 import useExportPng from "@/hooks/useExportPng";
 import useImageLoader from "@/hooks/useImageLoader";
+import useIsCoarsePointer from "@/hooks/useIsCoarsePointer";
 import useRectHistory from "@/hooks/useRectHistory";
 import { MAX_FILE_BYTES, formatBytes, type FillStyle } from "@/lib/image";
 import type { Rect } from "@/lib/geometry";
 
 const MULTI_FILE_NOTICE = "Only the first image was opened.";
+const START_OVER_CONFIRM_MS = 3000;
 
 export default function Redactor() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -20,14 +22,23 @@ export default function Redactor() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [startOverArmed, setStartOverArmed] = useState(false);
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>("draw");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const isCoarsePointer = useIsCoarsePointer();
+  // Non-touch devices never see the switch, so their canvas stays interactive
+  // regardless of the stored mode.
+  const interactive = !isCoarsePointer || canvasMode === "draw";
 
   const {
     running: detecting,
+    stage: detectStage,
     progress: detectProgress,
-    result: detectResult,
+    message: detectMessage,
+    hasRun: detectHasRun,
     run: runDetect,
-    clearResult: clearDetectResult,
+    clear: clearDetectResult,
   } = useAutoDetect();
 
   // The paste listener lives inside useImageLoader, but the resulting file has
@@ -64,12 +75,15 @@ export default function Redactor() {
     selectedIndex,
     onAdd,
     onSelect: setSelectedIndex,
+    interactive,
   });
 
   const openFile = useCallback(
     async (file: File) => {
       setSelectedIndex(-1);
       setExportError(null);
+      // A freshly opened image invalidates any pending "confirm start over".
+      setStartOverArmed(false);
       clearDetectResult();
       await loadFile(file);
     },
@@ -85,7 +99,9 @@ export default function Redactor() {
   }, [openFile]);
 
   const runAutoDetect = useCallback(async () => {
-    const found = await runDetect(canvasRef.current);
+    // Existing boxes are handed in so duplicates can be filtered before they
+    // ever reach the canvas. The hook returns only the boxes that survived.
+    const found = await runDetect(canvasRef.current, rects);
     if (found.length === 0) {
       return;
     }
@@ -144,7 +160,31 @@ export default function Redactor() {
     setSelectedIndex(-1);
     setExportError(null);
     setNotice(null);
+    setStartOverArmed(false);
   }, [reset, resetHistory]);
+
+  // Two-step confirm instead of window.confirm: the first click only arms the
+  // button, a second click within the window commits. The timer is cleared on
+  // unmount and whenever the arm state flips, so a stale timeout can never
+  // disarm a later confirmation.
+  useEffect(() => {
+    if (!startOverArmed) {
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setStartOverArmed(false),
+      START_OVER_CONFIRM_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [startOverArmed]);
+
+  const requestStartOver = useCallback(() => {
+    if (!startOverArmed) {
+      setStartOverArmed(true);
+      return;
+    }
+    startOver();
+  }, [startOver, startOverArmed]);
 
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLElement>) => {
@@ -219,8 +259,10 @@ export default function Redactor() {
       {image ? (
         <>
           <p className="text-sm text-neutral-600">
-            {image.name} — {image.width} × {image.height} px. Drag on the image
-            to draw a box.
+            {image.name} — {image.width} × {image.height} px.{" "}
+            {interactive
+              ? "Drag on the image to draw a box."
+              : "Scroll mode: the image does not respond to drags."}
           </p>
           <div
             {...dragProps}
@@ -234,8 +276,15 @@ export default function Redactor() {
               height={image.height}
               role="img"
               aria-label={`Image being redacted, ${image.width} by ${image.height} pixels`}
-              className="block h-auto w-full cursor-crosshair bg-neutral-100"
-              style={{ touchAction: "none" }}
+              className={`block h-auto w-full bg-neutral-100 ${
+                interactive ? "cursor-crosshair" : "cursor-default"
+              }`}
+              // Draw mode swallows touch gestures so a drag draws instead of
+              // scrolling. Scroll mode hands panning back to the browser, which
+              // is the only way to reach the rest of a tall screenshot.
+              style={{
+                touchAction: interactive ? "none" : "pan-y pinch-zoom",
+              }}
               {...handlers}
             />
           </div>
@@ -286,16 +335,22 @@ export default function Redactor() {
           commit([]);
           setSelectedIndex(-1);
         }}
-        onStartOver={startOver}
+        onStartOver={requestStartOver}
+        startOverArmed={startOverArmed}
         onDownload={() => {
           void download();
         }}
         detecting={detecting}
+        detectStage={detectStage}
         detectProgress={detectProgress}
-        detectResult={detectResult}
+        detectMessage={detectMessage}
+        detectHasRun={detectHasRun}
         onAutoDetect={() => {
           void runAutoDetect();
         }}
+        showModeSwitch={isCoarsePointer}
+        canvasMode={canvasMode}
+        onCanvasModeChange={setCanvasMode}
       />
 
       <p className="text-xs leading-relaxed text-neutral-500">

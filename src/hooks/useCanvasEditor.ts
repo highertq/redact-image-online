@@ -18,6 +18,11 @@ type Options = {
   selectedIndex: number;
   onAdd: (rect: Rect) => void;
   onSelect: (index: number) => void;
+  /**
+   * When false the canvas ignores pointers entirely and stops capturing touch
+   * gestures, so the page scrolls normally. Used by the mobile Scroll mode.
+   */
+  interactive?: boolean;
 };
 
 export type CanvasEditor = {
@@ -41,10 +46,21 @@ export default function useCanvasEditor({
   selectedIndex,
   onAdd,
   onSelect,
+  interactive = true,
 }: Options): CanvasEditor {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const [ghost, setGhost] = useState<Rect | null>(null);
+
+  // Dropping out of draw mode must discard the drag anchor, otherwise a later
+  // pointer move would draw a box from a gesture the user already abandoned.
+  // This only touches a ref, so it cannot trigger the state-in-effect warning;
+  // the repaint below keys off `interactive` and re-reads the ref.
+  useEffect(() => {
+    if (!interactive) {
+      startRef.current = null;
+    }
+  }, [interactive]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -61,14 +77,16 @@ export default function useCanvasEditor({
 
     const scale = canvas.width / image.width;
     const line = Math.max(1.5, 2 / scale);
-    const boxes = ghost ? [...rects, ghost] : rects;
+    // In scroll mode a stray ghost would imply drawing is still live.
+    const activeGhost = interactive ? ghost : null;
+    const boxes = activeGhost ? [...rects, activeGhost] : rects;
 
     for (let index = 0; index < boxes.length; index += 1) {
       const rect = boxes[index];
       if (rect.w <= 0 || rect.h <= 0) {
         continue;
       }
-      const isGhost = ghost !== null && index === boxes.length - 1;
+      const isGhost = activeGhost !== null && index === boxes.length - 1;
       const isSelected = !isGhost && index === selectedIndex;
 
       ctx.fillStyle = GHOST_FILL;
@@ -100,7 +118,7 @@ export default function useCanvasEditor({
         ctx.fillText(label, labelX + padX, labelY + padY);
       }
     }
-  }, [ghost, image, rects, selectedIndex]);
+  }, [ghost, image, interactive, rects, selectedIndex]);
 
   useEffect(() => {
     draw();
@@ -125,7 +143,7 @@ export default function useCanvasEditor({
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!image) {
+      if (!image || !interactive) {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
@@ -139,13 +157,13 @@ export default function useCanvasEditor({
       startRef.current = point;
       setGhost({ x: point.x, y: point.y, w: 0, h: 0 });
     },
-    [image, onSelect, rects, toImagePoint],
+    [image, interactive, onSelect, rects, toImagePoint],
   );
 
   const onPointerMove = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
       const start = startRef.current;
-      if (!start || !image) {
+      if (!start || !image || !interactive) {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
@@ -157,7 +175,7 @@ export default function useCanvasEditor({
         ),
       );
     },
-    [image, toImagePoint],
+    [image, interactive, toImagePoint],
   );
 
   const onPointerUp = useCallback(
@@ -168,7 +186,7 @@ export default function useCanvasEditor({
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
       setGhost(null);
-      if (!start || !image) {
+      if (!start || !image || !interactive) {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
@@ -182,7 +200,7 @@ export default function useCanvasEditor({
       }
       onAdd(final);
     },
-    [image, onAdd, toImagePoint],
+    [image, interactive, onAdd, toImagePoint],
   );
 
   return {

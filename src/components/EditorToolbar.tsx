@@ -1,11 +1,25 @@
 "use client";
 
+import DetectStatus from "@/components/DetectStatus";
+import type { DetectMessage } from "@/hooks/useAutoDetect";
+import type { OcrStage } from "@/lib/ocr";
 import type { FillStyle } from "@/lib/image";
 
 const STYLE_OPTIONS: { value: FillStyle; label: string }[] = [
   { value: "black", label: "Solid black" },
   { value: "white", label: "Solid white" },
   { value: "pixelate", label: "Pixelate" },
+];
+
+export type CanvasMode = "draw" | "scroll";
+
+const MODE_OPTIONS: { value: CanvasMode; label: string; hint: string }[] = [
+  { value: "draw", label: "Draw", hint: "Drag on the image to draw boxes." },
+  {
+    value: "scroll",
+    label: "Scroll",
+    hint: "The page scrolls normally. Switch to Draw to add boxes.",
+  },
 ];
 
 type ToolbarProps = {
@@ -21,15 +35,26 @@ type ToolbarProps = {
   onRemoveSelected: () => void;
   onClearAll: () => void;
   onStartOver: () => void;
+  startOverArmed: boolean;
   onDownload: () => void;
   detecting: boolean;
+  detectStage: OcrStage;
   detectProgress: number;
-  detectResult: string | null;
+  detectMessage: DetectMessage | null;
+  detectHasRun: boolean;
   onAutoDetect: () => void;
+  showModeSwitch: boolean;
+  canvasMode: CanvasMode;
+  onCanvasModeChange: (mode: CanvasMode) => void;
 };
 
 const buttonClass =
   "min-h-11 min-w-0 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900";
+
+const segmentedActive =
+  "border-neutral-900 bg-neutral-900 text-white";
+const segmentedIdle =
+  "border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-100";
 
 export default function EditorToolbar({
   fillStyle,
@@ -44,14 +69,51 @@ export default function EditorToolbar({
   onRemoveSelected,
   onClearAll,
   onStartOver,
+  startOverArmed,
   onDownload,
   detecting,
+  detectStage,
   detectProgress,
-  detectResult,
+  detectMessage,
+  detectHasRun,
   onAutoDetect,
+  showModeSwitch,
+  canvasMode,
+  onCanvasModeChange,
 }: ToolbarProps) {
   return (
     <div className="flex flex-col gap-4">
+      {showModeSwitch ? (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-medium text-neutral-900">
+            Canvas mode
+          </legend>
+          <div className="flex gap-2">
+            {MODE_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-neutral-900 ${
+                  canvasMode === option.value ? segmentedActive : segmentedIdle
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="canvas-mode"
+                  value={option.value}
+                  checked={canvasMode === option.value}
+                  onChange={() => onCanvasModeChange(option.value)}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          <p className="text-xs leading-relaxed text-neutral-600">
+            {MODE_OPTIONS.find((option) => option.value === canvasMode)?.hint}
+          </p>
+        </fieldset>
+      ) : null}
+
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-medium text-neutral-900">
           Fill style
@@ -60,10 +122,8 @@ export default function EditorToolbar({
           {STYLE_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className={`cursor-pointer rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                fillStyle === option.value
-                  ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-100"
+              className={`cursor-pointer rounded-md border px-3 py-2 text-sm font-medium transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-neutral-900 ${
+                fillStyle === option.value ? segmentedActive : segmentedIdle
               }`}
             >
               <input
@@ -93,30 +153,16 @@ export default function EditorToolbar({
           aria-busy={detecting}
           className="min-h-11 w-full rounded-md border border-neutral-900 bg-neutral-50 px-3 py-2 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 sm:w-auto"
         >
-          {detecting
-            ? `Scanning for text… ${Math.round(detectProgress * 100)}%`
-            : "Auto-detect sensitive text"}
+          {detecting ? "Scanning for text…" : "Auto-detect sensitive text"}
         </button>
-        {detecting ? (
-          <div
-            role="progressbar"
-            aria-label="Text detection progress"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(detectProgress * 100)}
-            className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-neutral-200"
-          >
-            <div
-              className="h-full rounded-full bg-neutral-900 transition-[width] duration-200"
-              style={{ width: `${Math.round(detectProgress * 100)}%` }}
-            />
-          </div>
-        ) : null}
-        {detectResult && !detecting ? (
-          <p role="status" className="text-sm leading-relaxed text-neutral-700">
-            {detectResult}
-          </p>
-        ) : null}
+        <DetectStatus
+          running={detecting}
+          stage={detectStage}
+          progress={detectProgress}
+          message={detectMessage}
+          hasRun={detectHasRun}
+          onRetry={onAutoDetect}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -160,10 +206,18 @@ export default function EditorToolbar({
           type="button"
           onClick={onStartOver}
           disabled={!hasImage}
-          aria-label="Start over with a different image"
-          className={buttonClass}
+          aria-label={
+            startOverArmed
+              ? "Confirm starting over, discarding this image and all boxes"
+              : "Start over with a different image"
+          }
+          className={
+            startOverArmed
+              ? "min-h-11 min-w-0 rounded-md border border-red-700 bg-red-50 px-3 py-2 text-sm font-semibold text-red-900 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-800"
+              : buttonClass
+          }
         >
-          Start over
+          {startOverArmed ? "Click again to confirm" : "Start over"}
         </button>
         <button
           type="button"
