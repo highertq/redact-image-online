@@ -57,7 +57,7 @@ function FitToggle({
           onClick={() => onFitChange(option.value)}
           aria-pressed={fit === option.value}
           title={option.title}
-          className={`min-h-8 rounded-[4px] px-2 text-label font-medium tabular-nums transition-hover ${
+          className={`min-h-8 rounded-sm px-2 text-label font-medium tabular-nums transition-hover ${
             fit === option.value
               ? "bg-paper text-ink shadow-card"
               : "text-ink-3 hover:text-ink"
@@ -143,7 +143,7 @@ export default function CanvasStage({
 
       <div
         {...dragProps}
-        className={`min-h-0 flex-1 overflow-auto overscroll-contain border bg-surface transition-state lg:max-h-[calc(100dvh-13rem)] lg:flex-none lg:rounded-lg ${
+        className={`flex min-h-0 flex-1 overflow-auto overscroll-contain border bg-surface transition-state lg:max-h-[calc(100dvh-13rem)] lg:flex-none lg:rounded-lg ${
           expanded ? "max-lg:flex-1" : "max-lg:max-h-[62dvh] max-lg:flex-none max-lg:rounded-lg"
         } ${dragging ? "border-accent" : "border-line"}`}
       >
@@ -153,7 +153,7 @@ export default function CanvasStage({
           height={image.height}
           role="img"
           aria-label={`Image being redacted, ${image.width} by ${image.height} pixels`}
-          className={`block h-auto max-w-none ring-1 ring-line ${
+          className={`m-auto block h-auto max-w-none ring-1 ring-line ${
             fit === "fit" ? "w-full" : ""
           } ${interactive ? "cursor-crosshair" : "cursor-default"}`}
           style={{

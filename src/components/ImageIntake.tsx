@@ -80,7 +80,7 @@ export default function ImageIntake({
               key={step}
               className="flex items-center gap-2 text-label text-ink-3"
             >
-              <span className="grid h-5 w-5 place-items-center rounded-full border border-line-strong bg-paper text-[11px] font-semibold text-ink-2 tabular-nums">
+              <span className="grid h-6 w-6 place-items-center rounded-full border border-line-strong bg-paper text-label font-semibold text-ink-2 tabular-nums">
                 {index + 1}
               </span>
               {step}

@@ -5,9 +5,8 @@
  * raw colour, radius, shadow, or easing value. The type scale is a 1.25 step
  * from 13px, which is why the headings land on 20 / 25 / 31 / 39.
  *
- * Neutral is a compatibility alias for the old palette so untouched pages pick
- * up the warm, hue-carrying ink immediately. It maps onto the semantic tokens
- * below rather than defining a second colour system.
+ * Every value here is used by name in components. There is no fallback palette:
+ * a component that writes a raw hex or a Tailwind default colour is a bug.
  */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -62,17 +61,6 @@
   --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
 
   --container-site: 1180px;
-
-  --color-neutral-50: oklch(0.975 0.004 90);
-  --color-neutral-100: oklch(0.955 0.005 90);
-  --color-neutral-200: oklch(0.9 0.005 90);
-  --color-neutral-300: oklch(0.84 0.006 90);
-  --color-neutral-400: oklch(0.68 0.008 260);
-  --color-neutral-500: oklch(0.56 0.008 260);
-  --color-neutral-600: oklch(0.45 0.01 260);
-  --color-neutral-700: oklch(0.36 0.01 260);
-  --color-neutral-800: oklch(0.27 0.01 260);
-  --color-neutral-900: oklch(0.2 0.01 260);
 }
 
 @layer base {

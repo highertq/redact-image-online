@@ -1,22 +1,26 @@
 import Link from "next/link";
 
+import { Kicker, Prose } from "@/components/Typography";
 import { SITE_NAME } from "@/lib/site";
 
 export default function NotFound() {
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <p className="text-sm font-medium tracking-wide text-neutral-500 uppercase">
-        404
-      </p>
-      <h1 className="text-3xl font-semibold tracking-tight">
+      <Kicker>404</Kicker>
+      <h1 className="text-h1 font-semibold text-ink md:text-display">
         This page does not exist
       </h1>
-      <p className="text-sm leading-relaxed text-neutral-600">
-        The link may be outdated, or the address may have a typo. The redaction
-        tool itself is still where you left it.
-      </p>
-      <p className="text-sm">
-        <Link className="font-medium text-neutral-900 underline" href="/">
+      <Prose>
+        <p>
+          The link may be outdated, or the address may have a typo. The
+          redaction tool itself is still where you left it.
+        </p>
+      </Prose>
+      <p>
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center rounded-md bg-ink px-4 text-body-sm font-semibold text-paper transition-hover hover:bg-redact"
+        >
           Go to {SITE_NAME}
         </Link>
       </p>

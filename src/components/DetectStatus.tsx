@@ -43,12 +43,12 @@ export default function DetectStatus({
   return (
     <div className="flex flex-col gap-2">
       {showFirstRunNote ? (
-        <p className="text-xs leading-relaxed text-neutral-600">{FIRST_RUN_NOTE}</p>
+        <p className="text-label leading-relaxed text-ink-3">{FIRST_RUN_NOTE}</p>
       ) : null}
 
       {running ? (
         <div className="flex flex-col gap-2">
-          <p role="status" className="text-sm font-medium text-neutral-900">
+          <p role="status" className="text-body-sm font-medium text-ink">
             {STAGE_LABEL[stage]}
           </p>
           {showPercent ? (
@@ -58,10 +58,10 @@ export default function DetectStatus({
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={percent}
-              className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-neutral-200"
+              className="h-1.5 w-full overflow-hidden rounded-full bg-line"
             >
               <div
-                className="h-full rounded-full bg-neutral-900 transition-[width] duration-200"
+                className="h-full rounded-full bg-accent transition-state"
                 style={{ width: `${percent}%` }}
               />
             </div>
@@ -73,21 +73,21 @@ export default function DetectStatus({
         message.kind === "error" ? (
           <div
             role="alert"
-            className="flex flex-col gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2"
+            className="flex flex-col gap-2 rounded-md border border-danger bg-danger-soft px-3 py-2"
           >
-            <p className="text-sm font-medium leading-relaxed text-red-900">
+            <p className="text-body-sm font-medium leading-relaxed text-danger">
               {message.text}
             </p>
             <button
               type="button"
               onClick={onRetry}
-              className="min-h-11 self-start rounded-md border border-red-700 bg-white px-3 py-2 text-sm font-semibold text-red-900 transition-colors hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-800"
+              className="inline-flex min-h-11 self-start items-center rounded-md border border-danger bg-paper px-3 text-body-sm font-semibold text-danger transition-hover hover:bg-danger-soft"
             >
               Retry
             </button>
           </div>
         ) : (
-          <p role="status" className="text-sm leading-relaxed text-neutral-700">
+          <p role="status" className="text-body-sm leading-relaxed text-ink-2">
             {message.text}
           </p>
         )

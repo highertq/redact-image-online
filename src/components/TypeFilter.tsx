@@ -26,13 +26,13 @@ export default function TypeFilter({
 
   return (
     <div className="flex flex-col gap-2">
-      <p id="type-filter-label" className="text-sm font-medium text-neutral-900">
+      <p id="type-filter-label" className="text-label font-semibold text-ink-2">
         Auto-detected types
       </p>
       <div
         role="group"
         aria-labelledby="type-filter-label"
-        className="flex flex-wrap gap-2"
+        className="flex flex-wrap gap-1.5"
       >
         {chips.map((chip) => {
           const pressed = enabled.includes(chip.type);
@@ -42,16 +42,16 @@ export default function TypeFilter({
               type="button"
               aria-pressed={pressed}
               onClick={() => onToggle(chip.type)}
-              className={`min-h-11 rounded-md border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 ${
+              className={`inline-flex min-h-11 items-center gap-2 rounded-md border px-3 text-body-sm font-medium transition-hover ${
                 pressed
-                  ? "border-neutral-900 bg-neutral-900 text-white hover:bg-neutral-700"
-                  : "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-100"
+                  ? "border-ink bg-ink text-paper hover:bg-redact"
+                  : "border-line-strong bg-paper text-ink-2 hover:bg-surface-2 hover:text-ink"
               }`}
             >
               {chip.label}
               <span
-                className={`ml-2 tabular-nums ${
-                  pressed ? "text-neutral-300" : "text-neutral-500"
+                className={`font-mono text-label tabular-nums ${
+                  pressed ? "text-paper/70" : "text-ink-3"
                 }`}
               >
                 {chip.count}

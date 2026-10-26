@@ -40,7 +40,10 @@ export default function EditorStatus({
       />
 
       {error ? (
-        <p role="alert" className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p
+          role="alert"
+          className="rounded-md border border-danger bg-danger-soft px-4 py-3 text-body-sm text-danger"
+        >
           {error}
         </p>
       ) : null}
@@ -48,14 +51,14 @@ export default function EditorStatus({
       {notice ? (
         <p
           role="status"
-          className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          className="rounded-md border border-line bg-warn-soft px-4 py-3 text-body-sm text-ink"
         >
           {notice}
         </p>
       ) : null}
 
       {busy ? (
-        <p role="status" className="text-sm text-neutral-600">
+        <p role="status" className="text-body-sm text-ink-2">
           Loading image…
         </p>
       ) : null}
