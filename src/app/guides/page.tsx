@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { H2, PageHeader, Prose, Section } from "@/components/Typography";
 import { GUIDES, guideHref } from "@/lib/content/guides-index";
 import { SCENARIOS, scenarioHref } from "@/lib/content/scenarios";
 import { contentMetadata } from "@/lib/metadata";
@@ -30,44 +31,39 @@ export default function GuidesIndexPage() {
           ),
         }}
       />
-      <div className="flex flex-col gap-10">
-        <header className="flex flex-col gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Guides
-          </h1>
-          <p className="max-w-2xl text-base leading-relaxed text-neutral-600">
+      <div className="flex flex-col gap-12">
+        <PageHeader kicker="Guides" title="Guides">
+          <p>
             Redaction advice is mostly repeated badly. These pages take one
             question each and answer it properly, including the cases where the
             usual advice fails.
           </p>
-        </header>
+        </PageHeader>
 
-        <section className="flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Concepts and technique
-          </h2>
-          <ul className="flex flex-col gap-4">
+        <Section>
+          <H2>Concepts and technique</H2>
+          <ul className="grid gap-3 sm:grid-cols-2">
             {GUIDES.map((guide) => (
-              <li key={guide.slug} className="flex flex-col gap-1">
+              <li key={guide.slug}>
                 <Link
                   href={guideHref(guide.slug)}
-                  className="text-base font-semibold text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+                  className="flex h-full flex-col gap-2 rounded-lg border border-line bg-paper p-5 transition-hover hover:border-accent hover:bg-accent-soft"
                 >
-                  {guide.h1}
+                  <span className="text-body font-semibold text-ink">
+                    {guide.h1}
+                  </span>
+                  <span className="text-body-sm leading-relaxed text-ink-2">
+                    {guide.lede}
+                  </span>
                 </Link>
-                <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
-                  {guide.lede}
-                </p>
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Two ideas that cover most of it
-          </h2>
-          <div className="flex max-w-2xl flex-col gap-3 text-sm leading-relaxed text-neutral-600">
+        <Section>
+          <H2>Two ideas that cover most of it</H2>
+          <Prose>
             <p>
               Almost every redaction failure comes from one of two mistakes, and
               neither of them is about how strong the filter was.
@@ -75,60 +71,60 @@ export default function GuidesIndexPage() {
             <p>
               The first is choosing an operation that transforms instead of
               removes. A blur, a mosaic, and a lightly applied smear all leave a
-              residual in the exported file. For a long paragraph that residual is
-              harmless. For a six-digit code it is not, because the candidate
-              space is small enough to enumerate and the field itself often carries
-              a checksum to verify against.
+              residual in the exported file. For a long paragraph that residual
+              is harmless. For a six-digit code it is not, because the candidate
+              space is small enough to enumerate and the field itself often
+              carries a checksum to verify against.
             </p>
             <p>
-              The second is reviewing the wrong artifact. People check the editor,
-              where a box composites over an image in memory, and ship the file,
-              where the export path decides what actually gets written. Those two
-              things can differ, and the file is the one a recipient receives.
+              The second is reviewing the wrong artifact. People check the
+              editor, where a box composites over an image in memory, and ship
+              the file, where the export path decides what actually gets
+              written. Those two things can differ, and the file is the one a
+              recipient receives.
             </p>
             <p>
-              Everything else — which fields to cover, what metadata survives, why
-              a PDF behaves differently from a PNG — follows from those two points.
+              Everything else — which fields to cover, what metadata survives,
+              why a PDF behaves differently from a PNG — follows from those two
+              points.
             </p>
-          </div>
-        </section>
+          </Prose>
+        </Section>
 
-        <section className="flex flex-col gap-4">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            What to hide, by document type
-          </h2>
-          <ul className="flex flex-col gap-2 text-sm">
+        <Section>
+          <H2>What to hide, by document type</H2>
+          <ul className="grid gap-2 sm:grid-cols-2">
             {SCENARIOS.map((scenario) => (
               <li key={scenario.slug}>
                 <Link
                   href={scenarioHref(scenario.slug)}
-                  className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+                  className="flex min-h-11 items-center rounded-md border border-line px-4 text-body-sm font-medium text-ink transition-hover hover:border-accent hover:bg-accent-soft"
                 >
                   {scenario.h1}
                 </Link>
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            About the tool behind this site
-          </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
-            Everything described here is what the redaction tool on this site
-            actually does, which is why the pages are specific about limits
-            instead of claiming that redaction is solved.
-          </p>
-          <ul className="flex flex-col gap-2 text-sm">
+        <Section>
+          <H2>About the tool behind this site</H2>
+          <Prose>
+            <p>
+              Everything described here is what the redaction tool on this site
+              actually does, which is why the pages are specific about limits
+              instead of claiming that redaction is solved.
+            </p>
+          </Prose>
+          <ul className="flex flex-col gap-2 text-body-sm">
             <li>
               <Link
                 href="/methodology"
-                className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 font-medium text-ink transition-hover hover:border-accent hover:bg-accent-soft"
               >
                 How auto-detect decides what to flag
               </Link>
-              <span className="text-neutral-600">
+              <span className="text-ink-2">
                 {" "}
                 — the six pattern rules, the checksum, and the misses.
               </span>
@@ -136,26 +132,26 @@ export default function GuidesIndexPage() {
             <li>
               <Link
                 href="/security-audit"
-                className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+                className="inline-flex min-h-11 items-center rounded-md border border-line px-4 font-medium text-ink transition-hover hover:border-accent hover:bg-accent-soft"
               >
                 Security audit
               </Link>
-              <span className="text-neutral-600">
+              <span className="text-ink-2">
                 {" "}
                 — what the tool sends, and the one outbound request it makes.
               </span>
             </li>
           </ul>
-        </section>
+        </Section>
 
-        <p className="text-sm">
+        <div className="border-t border-line pt-8">
           <Link
             href="/"
-            className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
+            className="inline-flex min-h-11 items-center rounded-md bg-ink px-4 text-body-sm font-semibold text-paper transition-hover hover:bg-redact"
           >
             Open the redaction tool
           </Link>
-        </p>
+        </div>
       </div>
     </>
   );
