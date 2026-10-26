@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import BoxPopover from "@/components/BoxPopover";
 import CanvasStage, { type FitMode } from "@/components/CanvasStage";
+import { PRIVACY_NOTE } from "@/components/privacy-note";
 import EditorStatus from "@/components/EditorStatus";
 import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
 import ImageIntake from "@/components/ImageIntake";
@@ -418,11 +419,16 @@ export default function Redactor() {
           </div>
         </>
       ) : (
-        <ImageIntake
-          dragging={dragging}
-          dragProps={dragProps}
-          inputRef={fileInputRef}
-        />
+        <>
+          <ImageIntake
+            dragging={dragging}
+            dragProps={dragProps}
+            inputRef={fileInputRef}
+          />
+          <p className="measure text-label leading-relaxed text-ink-3">
+            {PRIVACY_NOTE}
+          </p>
+        </>
       )}
 
       {activeBox.active && activeBox.rect ? (
