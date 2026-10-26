@@ -85,6 +85,22 @@ export default function GuidePage({ guide }: { guide: Guide }) {
             </Section>
           ))}
 
+          {/*
+            Contextual link to the homepage, identical in role to the one on
+            scenario pages: it sends primary-keyword anchor text from the
+            guide cluster into the pillar.
+          */}
+          <p className="measure rounded-lg border border-line bg-surface px-5 py-4 text-body-sm leading-relaxed text-ink-2">
+            {guide.pillarLink.before}{" "}
+            <Link
+              href="/"
+              className="font-semibold text-ink underline decoration-line-strong underline-offset-2 transition-hover hover:text-accent hover:decoration-accent"
+            >
+              {guide.pillarLink.anchor}
+            </Link>{" "}
+            {guide.pillarLink.after}
+          </p>
+
           <Section>
             <H2>Frequently asked questions</H2>
             <Faq items={guide.faq} />

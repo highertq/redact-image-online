@@ -61,6 +61,8 @@ export type Guide = {
   lede: string;
   sections: { heading: string; body: string[] }[];
   faq: FaqItem[];
+  /** Contextual link to the homepage, same pillar-anchor contract as Scenario. */
+  pillarLink: PillarLink;
   /** Slugs of sibling guides. Scenario slugs go in `relatedScenarios`. */
   related: string[];
   /** Slugs of scenario pages worth linking to from this guide. */

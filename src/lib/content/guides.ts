@@ -75,6 +75,13 @@ export const REDACT_VS_BLUR: Guide = {
   ],
   related: ["is-blur-safe", "remove-exif", "what-does-redact-mean"],
   relatedScenarios: ["redact-screenshot", "redact-ssn"],
+  pillarLink: {
+    before:
+      "Once you have decided that a fill is the right operation for your file, the tool itself needs no setup. You can",
+    anchor: "redact image online",
+    after:
+      "in any browser, choose the style per box, and check the export at full zoom before sending it.",
+  },
 };
 
 export const IS_BLUR_SAFE: Guide = {
@@ -142,6 +149,13 @@ export const IS_BLUR_SAFE: Guide = {
   ],
   related: ["redact-vs-blur", "remove-exif", "what-does-redact-mean"],
   relatedScenarios: ["redact-screenshot", "redact-card-number"],
+  pillarLink: {
+    before:
+      "Replacing the pixels instead of smearing them is one click in this tool — boxes default to solid black and the export flattens them into the file. That is the safest way to",
+    anchor: "redact image online",
+    after:
+      "for anything a person could act on: numbers, names, tokens, and addresses.",
+  },
 };
 
 export const REMOVE_EXIF: Guide = {
@@ -216,6 +230,13 @@ export const REMOVE_EXIF: Guide = {
   ],
   related: ["redact-vs-blur", "is-blur-safe", "what-does-redact-mean"],
   relatedScenarios: ["redact-screenshot", "redact-receipt"],
+  pillarLink: {
+    before:
+      "Drawing a box and exporting through this page rebuilds the file from pixels, so the old container never comes along. It is the same rebuild step that lets you",
+    anchor: "redact image online",
+    after:
+      "and drop the metadata in the same download, without opening a dedicated EXIF tool.",
+  },
 };
 
 export const WHAT_DOES_REDACT_MEAN: Guide = {
@@ -285,4 +306,11 @@ export const WHAT_DOES_REDACT_MEAN: Guide = {
   ],
   related: ["redact-vs-blur", "remove-exif", "is-blur-safe"],
   relatedScenarios: ["redact-bank-statement", "redact-screenshot"],
+  pillarLink: {
+    before:
+      "Knowing the definition does not do the work; an operation that overwrites pixels and re-encodes the file does. If you want to apply the real meaning of the word to a photo or screenshot,",
+    anchor: "redact image online",
+    after:
+      "here — the box replaces what is underneath it, and the download is a freshly encoded PNG.",
+  },
 };

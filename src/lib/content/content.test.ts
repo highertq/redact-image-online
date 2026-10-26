@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { GUIDES, guideBySlug } from "@/lib/content/guides-index";
-import {
-  PILLAR_ANCHOR_PREFIX,
-  type Scenario,
-} from "@/lib/content/types";
+import { PILLAR_ANCHOR_PREFIX } from "@/lib/content/types";
 import { SCENARIOS, scenarioBySlug } from "@/lib/content/scenarios";
 
 function allSlugs(): string[] {
@@ -60,8 +57,8 @@ describe("pillar internal linking", () => {
   });
 
   it("writes a distinct sentence on every page", () => {
-    const sentences = SCENARIOS.map(
-      (item: Scenario) =>
+    const sentences = [...SCENARIOS, ...GUIDES].map(
+      (item) =>
         `${item.pillarLink.before}|${item.pillarLink.anchor}|${item.pillarLink.after}`,
     );
     expect(new Set(sentences).size).toBe(sentences.length);
@@ -89,7 +86,7 @@ describe("pillar internal linking", () => {
       "that ",
       "if ",
     ];
-    for (const scenario of SCENARIOS) {
+    for (const scenario of [...SCENARIOS, ...GUIDES]) {
       const tail = scenario.pillarLink.after.trimStart().toLowerCase();
       for (const opener of badOpeners) {
         expect(
@@ -101,8 +98,19 @@ describe("pillar internal linking", () => {
   });
 
   it("keeps the anchor a bare keyword phrase with no trailing punctuation", () => {
-    for (const scenario of SCENARIOS) {
-      expect(scenario.pillarLink.anchor).toBe(PILLAR_ANCHOR_PREFIX);
+    for (const item of [...SCENARIOS, ...GUIDES]) {
+      expect(item.pillarLink.anchor).toBe(PILLAR_ANCHOR_PREFIX);
+    }
+  });
+
+  it("every guide anchors back to the homepage with the primary keyword", () => {
+    for (const guide of GUIDES) {
+      expect(
+        guide.pillarLink.anchor.startsWith(PILLAR_ANCHOR_PREFIX),
+        `${guide.slug} anchor is "${guide.pillarLink.anchor}"`,
+      ).toBe(true);
+      expect(guide.pillarLink.before.length).toBeGreaterThan(30);
+      expect(guide.pillarLink.after.length).toBeGreaterThan(20);
     }
   });
 });

@@ -5,11 +5,13 @@ import {
   QR_CODE,
   SIGNATURE,
 } from "@/lib/content/scenarios-business";
+import { PHONE_NUMBER } from "@/lib/content/scenarios-contacts";
 import {
   BANK_STATEMENT,
   RECEIPT,
   SCREENSHOT,
 } from "@/lib/content/scenarios-documents";
+import { API_KEY, IP_ADDRESS } from "@/lib/content/scenarios-devops";
 import { CARD_NUMBER, EMAIL, SSN } from "@/lib/content/scenarios-identity";
 import type { Scenario } from "@/lib/content/types";
 
@@ -22,6 +24,7 @@ export const SCENARIOS: Scenario[] = [
   SSN,
   CARD_NUMBER,
   EMAIL,
+  PHONE_NUMBER,
   BANK_STATEMENT,
   RECEIPT,
   INVOICE,
@@ -29,6 +32,8 @@ export const SCENARIOS: Scenario[] = [
   MEDICAL_RECORD,
   QR_CODE,
   SIGNATURE,
+  API_KEY,
+  IP_ADDRESS,
 ];
 
 const BY_SLUG = new Map(SCENARIOS.map((item) => [item.slug, item]));
