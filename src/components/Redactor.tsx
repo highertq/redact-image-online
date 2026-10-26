@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import BoxPopover from "@/components/BoxPopover";
-import CanvasStage, { PRIVACY_NOTE, type FitMode } from "@/components/CanvasStage";
+import CanvasStage, { type FitMode } from "@/components/CanvasStage";
 import EditorStatus from "@/components/EditorStatus";
 import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
 import ImageIntake from "@/components/ImageIntake";
@@ -418,16 +418,11 @@ export default function Redactor() {
           </div>
         </>
       ) : (
-        <>
-          <ImageIntake
-            dragging={dragging}
-            dragProps={dragProps}
-            inputRef={fileInputRef}
-          />
-          <p className="measure text-label leading-relaxed text-ink-3">
-            {PRIVACY_NOTE}
-          </p>
-        </>
+        <ImageIntake
+          dragging={dragging}
+          dragProps={dragProps}
+          inputRef={fileInputRef}
+        />
       )}
 
       {activeBox.active && activeBox.rect ? (

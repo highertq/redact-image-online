@@ -3,6 +3,7 @@
 import type { DragEvent, RefObject } from "react";
 
 import { IconClose } from "@/components/Icons";
+import { PRIVACY_NOTE } from "@/components/privacy-note";
 import type { LoadedImage } from "@/hooks/useImageLoader";
 
 export type FitMode = "fit" | "actual";
@@ -29,11 +30,6 @@ type Props = {
   fit: FitMode;
   onFitChange: (fit: FitMode) => void;
 };
-
-/** The site's core promise, kept in one place because it is rendered in both
- * the empty state and the editor. */
-export const PRIVACY_NOTE =
-  "Your image never leaves this browser tab. Nothing is uploaded, and the exported PNG is re-encoded from a canvas, which drops metadata such as EXIF.";
 
 function FitToggle({
   fit,

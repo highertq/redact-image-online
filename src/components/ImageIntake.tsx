@@ -3,6 +3,7 @@
 import type { DragEvent, RefObject } from "react";
 
 import { IconUpload } from "@/components/Icons";
+import { PRIVACY_NOTE } from "@/components/privacy-note";
 import { MAX_FILE_BYTES, formatBytes } from "@/lib/image";
 
 type Props = {
@@ -69,8 +70,8 @@ export default function ImageIntake({
         </button>
       </div>
 
-      <p className="text-center text-body-sm text-ink-2">
-        Your image never leaves this browser tab. Nothing is uploaded.
+      <p className="text-center text-body-sm leading-relaxed text-ink-2">
+        {PRIVACY_NOTE}
       </p>
 
       <ol className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
