@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import BoxPopover from "@/components/BoxPopover";
+import CanvasStage, { type FitMode } from "@/components/CanvasStage";
 import EditorStatus from "@/components/EditorStatus";
 import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
 import ImageIntake from "@/components/ImageIntake";
@@ -32,6 +33,10 @@ export default function Redactor() {
   const [startOverArmed, setStartOverArmed] = useState(false);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("draw");
   const [toolsOpen, setToolsOpen] = useState(false);
+  // On a phone the editor takes the viewport by default; collapsing it puts the
+  // stage back in the page flow.
+  const [stageExpanded, setStageExpanded] = useState(true);
+  const [fit, setFit] = useState<FitMode>("fit");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isCoarsePointer = useIsCoarsePointer();
@@ -151,6 +156,7 @@ export default function Redactor() {
       // A freshly opened image invalidates any pending "confirm start over",
       // and its boxes/chips must not carry over from the previous one.
       setStartOverArmed(false);
+      setStageExpanded(true);
       clearDetectResult();
       detectTypes.reset();
       await loadFile(file);
@@ -244,6 +250,7 @@ export default function Redactor() {
     setNotice(null);
     setStartOverArmed(false);
     setToolsOpen(false);
+    setStageExpanded(true);
   }, [detectTypes, reset, resetHistory]);
 
   // Two-step confirm instead of window.confirm: the first click only arms the
@@ -336,57 +343,26 @@ export default function Redactor() {
       {image ? (
         <>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-            <div className="flex min-w-0 flex-col gap-2">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <p className="min-w-0 truncate text-body-sm text-ink-2">
-                  <span className="font-medium text-ink">{image.name}</span>
-                  <span className="text-ink-3">
-                    {" "}
-                    · {image.width} × {image.height} px
-                  </span>
-                </p>
-                <p className="text-label text-ink-3">
-                  {interactive
-                    ? "Drag on the image to draw a box."
-                    : "Scroll mode: the image does not respond to drags."}
-                </p>
-              </div>
-              <div
-                {...dragProps}
-                className={`overflow-hidden rounded-lg border bg-surface transition-state ${
-                  dragging ? "border-accent" : "border-line"
-                }`}
-              >
-                <canvas
-                  ref={canvasRef}
-                  width={image.width}
-                  height={image.height}
-                  role="img"
-                  aria-label={`Image being redacted, ${image.width} by ${image.height} pixels`}
-                  className={`block h-auto w-full ${
-                    interactive ? "cursor-crosshair" : "cursor-default"
-                  }`}
-                  // Draw mode swallows touch gestures so a drag draws instead of
-                  // scrolling. Scroll mode hands panning back to the browser, which
-                  // is the only way to reach the rest of a tall screenshot.
-                  style={{
-                    touchAction: interactive ? "none" : "pan-y pinch-zoom",
-                  }}
-                  {...handlers}
-                />
-              </div>
-              <p className="text-label leading-relaxed text-ink-3">
-                Your image never leaves this browser tab. Nothing is uploaded,
-                and the exported PNG is re-encoded from a canvas, which drops
-                metadata such as EXIF.
-              </p>
+            <div className="min-w-0">
+              <CanvasStage
+                image={image}
+                canvasRef={canvasRef}
+                handlers={handlers}
+                interactive={interactive}
+                dragging={dragging}
+                dragProps={dragProps}
+                expanded={stageExpanded}
+                onToggleExpanded={() => setStageExpanded((open) => !open)}
+                fit={fit}
+                onFitChange={setFit}
+              />
             </div>
 
             {/* One panel, two placements: right column on desktop, bottom
                 drawer on a phone. Visibility is CSS-only. */}
             <div
               id="tool-panel"
-              className={`fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-lg border-t border-line bg-paper p-4 pb-safe-2 shadow-pop transition-page lg:static lg:z-auto lg:max-h-none lg:translate-y-0 lg:overflow-visible lg:rounded-lg lg:border lg:border-line lg:bg-surface lg:p-4 lg:opacity-100 lg:shadow-none ${
+              className={`fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-lg border-t border-line bg-paper p-4 shadow-pop transition-page max-lg:bottom-[calc(3.75rem+env(safe-area-inset-bottom))] lg:static lg:z-auto lg:max-h-none lg:translate-y-0 lg:overflow-visible lg:rounded-lg lg:border lg:border-line lg:bg-surface lg:p-4 lg:opacity-100 lg:shadow-none ${
                 toolsOpen
                   ? "visible translate-y-0 opacity-100"
                   : "invisible translate-y-full opacity-0 lg:visible"
@@ -412,12 +388,12 @@ export default function Redactor() {
               type="button"
               aria-label="Close tools"
               onClick={() => setToolsOpen(false)}
-              className="fixed inset-0 z-40 bg-ink/20 lg:hidden"
+              className="fixed inset-0 z-[35] bg-ink/20 lg:hidden"
             />
           ) : null}
 
           {/* Phone action bar: the two things that must never be scrolled away. */}
-          <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-line bg-paper/95 px-4 pb-safe-2 pt-2 backdrop-blur-md lg:hidden">
+          <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-line bg-paper/95 px-4 pb-safe-2 pt-2 backdrop-blur-md lg:hidden">
             <button
               type="button"
               onClick={() => setToolsOpen((open) => !open)}
