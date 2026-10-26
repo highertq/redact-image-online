@@ -16,7 +16,7 @@ function FooterColumn({
       <h2 className="text-label font-semibold tracking-wide text-ink uppercase">
         {heading}
       </h2>
-      <ul className="flex flex-col gap-1 text-body-sm text-ink-2">
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-body-sm text-ink-2 sm:flex sm:flex-col">
         {links.map((link) => (
           <li key={link.href}>
             <Link
@@ -34,9 +34,9 @@ function FooterColumn({
 
 export default function SiteFooter() {
   return (
-    <footer className="mt-16 border-t border-line bg-surface/60">
-      <div className="mx-auto w-full max-w-site px-4 py-12 sm:px-6">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+    <footer className="mt-12 border-t border-line bg-surface/60 sm:mt-16">
+      <div className="mx-auto w-full max-w-site px-4 py-10 sm:px-6 sm:py-12">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           <FooterColumn
             heading="What to hide"
             links={SCENARIOS.map((item) => ({

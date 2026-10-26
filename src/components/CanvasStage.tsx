@@ -30,7 +30,9 @@ type Props = {
   onFitChange: (fit: FitMode) => void;
 };
 
-const PRIVACY_LINE =
+/** The site's core promise, kept in one place because it is rendered in both
+ * the empty state and the editor. */
+export const PRIVACY_NOTE =
   "Your image never leaves this browser tab. Nothing is uploaded, and the exported PNG is re-encoded from a canvas, which drops metadata such as EXIF.";
 
 function FitToggle({
@@ -131,7 +133,7 @@ export default function CanvasStage({
 
       {expanded ? (
         <p className="border-b border-line bg-surface px-4 py-2 text-label leading-snug text-ink-2 lg:hidden">
-          {PRIVACY_LINE}
+          {PRIVACY_NOTE}
         </p>
       ) : null}
 
@@ -170,7 +172,7 @@ export default function CanvasStage({
       </div>
 
       <p className="hidden px-1 pt-2 text-label leading-relaxed text-ink-3 lg:block">
-        {PRIVACY_LINE}
+        {PRIVACY_NOTE}
       </p>
     </div>
   );

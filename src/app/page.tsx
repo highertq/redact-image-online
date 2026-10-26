@@ -157,7 +157,7 @@ const cardLink =
 
 export default function Home() {
   return (
-    <div className="flex flex-col gap-16">
+    <div className="flex flex-col gap-12 md:gap-16">
       <script
         type="application/ld+json"
         // Content is generated from the constants above, not user input.
@@ -214,12 +214,12 @@ export default function Home() {
             <li key={item.slug}>
               <Link
                 href={scenarioHref(item.slug)}
-                className="flex h-full flex-col gap-2 rounded-lg border border-line bg-paper p-5 transition-hover hover:border-accent hover:bg-accent-soft"
+                className="flex h-full flex-col gap-2 rounded-lg border border-line bg-paper p-4 transition-hover hover:border-accent hover:bg-accent-soft sm:p-5"
               >
                 <span className="text-body font-semibold text-ink">
                   {item.navLabel}
                 </span>
-                <span className="text-body-sm leading-relaxed text-ink-2">
+                <span className="line-clamp-3 text-body-sm leading-relaxed text-ink-2 sm:line-clamp-none">
                   {item.lede.length > 150
                     ? `${item.lede.slice(0, 147).trimEnd()}…`
                     : item.lede}
@@ -242,7 +242,7 @@ export default function Home() {
           {STEPS.map((step, index) => (
             <li
               key={step.title}
-              className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
+              className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-4 sm:p-5"
             >
               <span
                 aria-hidden="true"
