@@ -8,10 +8,12 @@ import { PRIVACY_NOTE } from "@/components/privacy-note";
 import EditorStatus from "@/components/EditorStatus";
 import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
 import ImageIntake from "@/components/ImageIntake";
-import { IconClose, IconDownload, IconSliders } from "@/components/Icons";
+import MobileActionBar from "@/components/MobileActionBar";
+import ToolPanel from "@/components/ToolPanel";
 import useActiveBox, { type BoxPatch } from "@/hooks/useActiveBox";
 import useAutoDetect from "@/hooks/useAutoDetect";
 import useCanvasEditor from "@/hooks/useCanvasEditor";
+import useConfirmAction from "@/hooks/useConfirmAction";
 import useEditorShortcuts from "@/hooks/useEditorShortcuts";
 import useExportPng from "@/hooks/useExportPng";
 import useFileDrop from "@/hooks/useFileDrop";
@@ -23,7 +25,6 @@ import type { FillStyle } from "@/lib/image";
 import type { Rect } from "@/lib/geometry";
 
 const MULTI_FILE_NOTICE = "Only the first image was opened.";
-const START_OVER_CONFIRM_MS = 3000;
 
 export default function Redactor() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -31,7 +32,6 @@ export default function Redactor() {
   const [exportError, setExportError] = useState<string | null>(null);
 
   const [notice, setNotice] = useState<string | null>(null);
-  const [startOverArmed, setStartOverArmed] = useState(false);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("draw");
   const [toolsOpen, setToolsOpen] = useState(false);
   // On a phone the editor takes the viewport by default; collapsing it puts the
@@ -150,19 +150,37 @@ export default function Redactor() {
     [activeBox, detectTypes, rects],
   );
 
+  const {
+    armed: startOverArmed,
+    request: requestStartOver,
+    disarm: disarmStartOver,
+  } = useConfirmAction();
+
+  const startOver = useCallback(() => {
+    reset();
+    resetHistory();
+    detectTypes.reset();
+    setSelectedIndex(-1);
+    setExportError(null);
+    setNotice(null);
+    setToolsOpen(false);
+    setStageExpanded(true);
+    disarmStartOver();
+  }, [detectTypes, disarmStartOver, reset, resetHistory]);
+
   const openFile = useCallback(
     async (file: File) => {
       setSelectedIndex(-1);
       setExportError(null);
       // A freshly opened image invalidates any pending "confirm start over",
       // and its boxes/chips must not carry over from the previous one.
-      setStartOverArmed(false);
+      disarmStartOver();
       setStageExpanded(true);
       clearDetectResult();
       detectTypes.reset();
       await loadFile(file);
     },
-    [clearDetectResult, detectTypes, loadFile],
+    [clearDetectResult, detectTypes, disarmStartOver, loadFile],
   );
 
   useEffect(() => {
@@ -223,6 +241,7 @@ export default function Redactor() {
     deleteEnabled: selectedIndex >= 0 && selectedIndex < rects.length,
   });
 
+
   const download = useExportPng({
     image,
     rects,
@@ -242,40 +261,6 @@ export default function Redactor() {
     [openFile],
   );
 
-  const startOver = useCallback(() => {
-    reset();
-    resetHistory();
-    detectTypes.reset();
-    setSelectedIndex(-1);
-    setExportError(null);
-    setNotice(null);
-    setStartOverArmed(false);
-    setToolsOpen(false);
-    setStageExpanded(true);
-  }, [detectTypes, reset, resetHistory]);
-
-  // Two-step confirm instead of window.confirm: the first click only arms the
-  // button, a second click within the window commits. The timer is cleared on
-  // unmount and whenever the arm state flips, so a stale timeout can never
-  // disarm a later confirmation.
-  useEffect(() => {
-    if (!startOverArmed) {
-      return;
-    }
-    const timer = window.setTimeout(
-      () => setStartOverArmed(false),
-      START_OVER_CONFIRM_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [startOverArmed]);
-
-  const requestStartOver = useCallback(() => {
-    if (!startOverArmed) {
-      setStartOverArmed(true);
-      return;
-    }
-    startOver();
-  }, [startOver, startOverArmed]);
 
   // Escape closes the phone drawer. On desktop the panel is always visible, so
   // the handler is harmless there.
@@ -309,7 +294,7 @@ export default function Redactor() {
       onRedo={redoAction}
       onRemoveSelected={removeSelected}
       onClearAll={clearAll}
-      onStartOver={requestStartOver}
+      onStartOver={() => requestStartOver(startOver)}
       startOverArmed={startOverArmed}
       onDownload={() => {
         void download();
@@ -361,62 +346,19 @@ export default function Redactor() {
 
             {/* One panel, two placements: right column on desktop, bottom
                 drawer on a phone. Visibility is CSS-only. */}
-            <div
-              id="tool-panel"
-              className={`fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-lg border-t border-line bg-paper p-4 shadow-pop transition-page max-lg:bottom-[calc(3.75rem+env(safe-area-inset-bottom))] lg:static lg:z-auto lg:max-h-none lg:translate-y-0 lg:overflow-visible lg:rounded-lg lg:border lg:border-line lg:bg-surface lg:p-4 lg:opacity-100 lg:shadow-none ${
-                toolsOpen
-                  ? "visible translate-y-0 opacity-100"
-                  : "invisible translate-y-full opacity-0 lg:visible"
-              }`}
-            >
-              <div className="mb-3 flex items-center justify-between lg:hidden">
-                <p className="text-body font-semibold text-ink">Tools</p>
-                <button
-                  type="button"
-                  onClick={() => setToolsOpen(false)}
-                  aria-label="Close tools"
-                  className="-mr-1 grid h-11 w-11 place-items-center rounded-md text-ink-2 transition-hover hover:bg-surface-2 hover:text-ink"
-                >
-                  <IconClose className="h-5 w-5" />
-                </button>
-              </div>
+            <ToolPanel open={toolsOpen} onClose={() => setToolsOpen(false)}>
               {toolbar}
-            </div>
+            </ToolPanel>
           </div>
 
-          {toolsOpen ? (
-            <button
-              type="button"
-              aria-label="Close tools"
-              onClick={() => setToolsOpen(false)}
-              className="fixed inset-0 z-[35] bg-ink/20 lg:hidden"
-            />
-          ) : null}
-
-          {/* Phone action bar: the two things that must never be scrolled away. */}
-          <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-line bg-paper/95 px-4 pb-safe-2 pt-2 backdrop-blur-md lg:hidden">
-            <button
-              type="button"
-              onClick={() => setToolsOpen((open) => !open)}
-              aria-expanded={toolsOpen}
-              aria-controls="tool-panel"
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border border-line bg-paper px-3 text-body-sm font-semibold text-ink transition-hover hover:bg-surface-2"
-            >
-              <IconSliders className="h-4 w-4" />
-              Tools
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void download();
-              }}
-              aria-label="Download redacted PNG"
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md bg-ink px-3 text-body-sm font-semibold text-paper transition-hover hover:bg-redact"
-            >
-              <IconDownload className="h-4 w-4" />
-              Download PNG
-            </button>
-          </div>
+          <MobileActionBar
+            toolsOpen={toolsOpen}
+            onToggleTools={() => setToolsOpen((open) => !open)}
+            onCloseTools={() => setToolsOpen(false)}
+            onDownload={() => {
+              void download();
+            }}
+          />
         </>
       ) : (
         <>
@@ -425,9 +367,7 @@ export default function Redactor() {
             dragProps={dragProps}
             inputRef={fileInputRef}
           />
-          <p className="measure text-label leading-relaxed text-ink-3">
-            {PRIVACY_NOTE}
-          </p>
+          <p className="measure text-label leading-relaxed text-ink-3">{PRIVACY_NOTE}</p>
         </>
       )}
 
