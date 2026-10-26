@@ -97,6 +97,14 @@ export function IconSliders(props: IconProps) {
   );
 }
 
+export function IconCheck(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="m4.5 12.5 5 5 10-11" />
+    </Base>
+  );
+}
+
 export function IconImage(props: IconProps) {
   return (
     <Base {...props}>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { IconCheck } from "@/components/Icons";
 import Redactor from "@/components/Redactor";
+import { H2, Prose, Section } from "@/components/Typography";
 import { GUIDES, guideHref } from "@/lib/content/guides-index";
 import { SCENARIOS, scenarioHref } from "@/lib/content/scenarios";
 import { OG_IMAGE } from "@/lib/metadata";
@@ -150,6 +152,9 @@ function buildJsonLd() {
   return JSON.stringify([software, faq]).replace(/</g, "\\u003c");
 }
 
+const cardLink =
+  "flex min-h-11 items-center rounded-md border border-line px-4 text-body-sm font-medium text-ink transition-hover hover:border-accent hover:bg-accent-soft";
+
 export default function Home() {
   return (
     <div className="flex flex-col gap-16">
@@ -175,17 +180,7 @@ export default function Home() {
                   aria-hidden="true"
                   className="grid h-4 w-4 place-items-center rounded-full bg-accent-soft text-accent"
                 >
-                  <svg
-                    viewBox="0 0 12 12"
-                    className="h-2.5 w-2.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m2.5 6.5 2.5 2.5 4.5-5" />
-                  </svg>
+                  <IconCheck className="h-2.5 w-2.5" />
                 </span>
                 {claim}
               </li>
@@ -204,27 +199,27 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          What are you hiding?
-        </h2>
-        <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
-          The tool works the same way for everything, but what counts as
-          sensitive depends on the document. Each page below covers one case:
-          which fields matter, what the automatic detection will and will not
-          find, and where people usually miss something.
-        </p>
-        <ul className="grid gap-3 sm:grid-cols-2">
+      <Section>
+        <H2>What are you hiding?</H2>
+        <Prose>
+          <p>
+            The tool works the same way for everything, but what counts as
+            sensitive depends on the document. Each page below covers one case:
+            which fields matter, what the automatic detection will and will not
+            find, and where people usually miss something.
+          </p>
+        </Prose>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {SCENARIOS.map((item) => (
             <li key={item.slug}>
               <Link
                 href={scenarioHref(item.slug)}
-                className="flex h-full flex-col gap-1 rounded-lg border border-neutral-200 p-4 transition-colors hover:border-neutral-400"
+                className="flex h-full flex-col gap-2 rounded-lg border border-line bg-paper p-5 transition-hover hover:border-accent hover:bg-accent-soft"
               >
-                <span className="text-base font-semibold text-neutral-900">
+                <span className="text-body font-semibold text-ink">
                   {item.navLabel}
                 </span>
-                <span className="text-sm leading-relaxed text-neutral-600">
+                <span className="text-body-sm leading-relaxed text-ink-2">
                   {item.lede.length > 150
                     ? `${item.lede.slice(0, 147).trimEnd()}…`
                     : item.lede}
@@ -233,95 +228,88 @@ export default function Home() {
             </li>
           ))}
         </ul>
-      </section>
+      </Section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          How to redact an image
-        </h2>
-        <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
-          The whole flow takes a few seconds, and nothing is saved between
-          visits. If you reload the page, the image and your boxes are gone.
-        </p>
-        <ol className="flex flex-col gap-4">
+      <Section>
+        <H2>How to redact an image</H2>
+        <Prose>
+          <p>
+            The whole flow takes a few seconds, and nothing is saved between
+            visits. If you reload the page, the image and your boxes are gone.
+          </p>
+        </Prose>
+        <ol className="grid gap-4 sm:grid-cols-2">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="flex gap-4">
+            <li
+              key={step.title}
+              className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
+            >
               <span
                 aria-hidden="true"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white"
+                className="grid h-7 w-7 place-items-center rounded-full bg-ink text-label font-semibold text-paper tabular-nums"
               >
                 {index + 1}
               </span>
-              <div className="flex flex-col gap-1">
-                <h3 className="text-base font-semibold text-neutral-900">
-                  {step.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-neutral-600">
-                  {step.body}
-                </p>
-              </div>
+              <h3 className="text-body font-semibold text-ink">{step.title}</h3>
+              <p className="text-body-sm leading-relaxed text-ink-2">
+                {step.body}
+              </p>
             </li>
           ))}
         </ol>
-      </section>
+      </Section>
 
-      <section className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            What you can hide
-          </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
-            Some things the tool can look for on its own. Others you will want to
-            box by hand. Either way, check every box before you download.
+      <Section>
+        <H2>What you can hide</H2>
+        <Prose>
+          <p>
+            Some things the tool can look for on its own. Others you will want
+            to box by hand. Either way, check every box before you download.
           </p>
-        </div>
+        </Prose>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-5">
-            <h3 className="text-base font-semibold text-neutral-900">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-3 rounded-lg border border-accent/30 bg-accent-soft p-5">
+            <h3 className="text-body font-semibold text-ink">
               Auto-detect can find
             </h3>
-            <ul className="flex flex-col gap-2 text-sm text-neutral-700">
+            <ul className="flex flex-col gap-2 text-body-sm text-ink-2">
               {AUTO_TYPES.map((item) => (
                 <li key={item.label}>
-                  <span className="font-medium text-neutral-900">
-                    {item.label}
-                  </span>{" "}
-                  — {item.detail}
+                  <span className="font-medium text-ink">{item.label}</span> —{" "}
+                  {item.detail}
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-5">
-            <h3 className="text-base font-semibold text-neutral-900">
+          <div className="flex flex-col gap-3 rounded-lg border border-line bg-paper p-5">
+            <h3 className="text-body font-semibold text-ink">
               Draw a box yourself
             </h3>
-            <ul className="flex flex-col gap-2 text-sm text-neutral-700">
+            <ul className="flex flex-col gap-2 text-body-sm text-ink-2">
               {MANUAL_TYPES.map((item) => (
                 <li key={item.label}>
-                  <span className="font-medium text-neutral-900">
-                    {item.label}
-                  </span>{" "}
-                  — {item.detail}
+                  <span className="font-medium text-ink">{item.label}</span> —{" "}
+                  {item.detail}
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
-          Automatic detection reads text on the image. It can miss something,
-          especially in small or low-contrast fonts, so it is a starting point
-          rather than a guarantee. Always review every box before downloading.
-        </p>
-      </section>
+        <Prose>
+          <p>
+            Automatic detection reads text on the image. It can miss something,
+            especially in small or low-contrast fonts, so it is a starting point
+            rather than a guarantee. Always review every box before downloading.
+          </p>
+        </Prose>
+      </Section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Redaction vs blur
-        </h2>
-        <div className="flex max-w-2xl flex-col gap-3 text-sm leading-relaxed text-neutral-600">
+      <Section>
+        <H2>Redaction vs blur</H2>
+        <Prose>
           <p>
             A blur or a soft mosaic looks convincing on screen, but it keeps the
             original shapes and, in the case of a small image, enough structure
@@ -340,14 +328,12 @@ export default function Home() {
             that it is the weaker option for small text, and white is there for
             dark screenshots where a black box would look out of place.
           </p>
-        </div>
-      </section>
+        </Prose>
+      </Section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Is it private?
-        </h2>
-        <div className="flex max-w-2xl flex-col gap-3 text-sm leading-relaxed text-neutral-600">
+      <Section>
+        <H2>Is it private?</H2>
+        <Prose>
           <p>
             Yes. The image is decoded and redacted inside this browser tab. There
             is no upload step, no server-side processing, and no request that
@@ -364,64 +350,67 @@ export default function Home() {
             why metadata such as the camera model or GPS coordinates from the
             original file does not survive the trip.
           </p>
-        </div>
-      </section>
+        </Prose>
+      </Section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight">FAQ</h2>
-        <dl className="flex max-w-2xl flex-col divide-y divide-neutral-200">
+      <Section>
+        <H2>FAQ</H2>
+        <div className="divide-y divide-line border-y border-line">
           {FAQ.map((item) => (
-            <div key={item.question} className="flex flex-col gap-2 py-4">
-              <dt className="text-base font-semibold text-neutral-900">
+            <details key={item.question} className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-body font-semibold text-ink transition-hover hover:text-accent [&::-webkit-details-marker]:hidden">
                 {item.question}
-              </dt>
-              <dd className="text-sm leading-relaxed text-neutral-600">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4 shrink-0 text-ink-3 transition-state group-open:rotate-180"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </summary>
+              <p className="measure pb-4 text-body-sm leading-relaxed text-ink-2">
                 {item.answer}
-              </dd>
-            </div>
+              </p>
+            </details>
           ))}
-        </dl>
-      </section>
+        </div>
+      </Section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          Why a solid fill instead of a blur
-        </h2>
-        <p className="max-w-2xl text-sm leading-relaxed text-neutral-600">
-          A blur averages pixels and a solid fill replaces them. For short strings
-          like an account number, the difference decides whether the information
-          is gone or merely hard to read. These pages go into the detail,
-          including the cases where the usual advice is wrong.
-        </p>
-        <ul className="flex flex-col gap-2 text-sm">
+      <Section>
+        <H2>Why a solid fill instead of a blur</H2>
+        <Prose>
+          <p>
+            A blur averages pixels and a solid fill replaces them. For short
+            strings like an account number, the difference decides whether the
+            information is gone or merely hard to read. These pages go into the
+            detail, including the cases where the usual advice is wrong.
+          </p>
+        </Prose>
+        <ul className="grid gap-2 sm:grid-cols-2">
           {GUIDES.map((item) => (
             <li key={item.slug}>
-              <Link
-                href={guideHref(item.slug)}
-                className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
-              >
+              <Link href={guideHref(item.slug)} className={cardLink}>
                 {item.h1}
               </Link>
             </li>
           ))}
           <li>
-            <Link
-              href="/methodology"
-              className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
-            >
+            <Link href="/methodology" className={cardLink}>
               How auto-detect decides what to flag
             </Link>
           </li>
           <li>
-            <Link
-              href="/security-audit"
-              className="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-neutral-900"
-            >
+            <Link href="/security-audit" className={cardLink}>
               What this tool sends, and what it does not
             </Link>
           </li>
         </ul>
-      </section>
+      </Section>
     </div>
   );
 }
