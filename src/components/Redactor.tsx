@@ -114,7 +114,7 @@ export default function Redactor() {
     onAdd,
     onSelect: setSelectedIndex,
     onPick: activeBox.open,
-    interactive,
+    mode: canvasMode,
     lines: detectLines,
   });
 

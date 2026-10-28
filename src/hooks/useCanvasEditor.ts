@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { TYPE_LABELS } from "@/lib/detect-types";
+import { paint } from "@/lib/canvas-paint";
 import { clampRect, hitTest, normalizeRect, type Rect } from "@/lib/geometry";
 import { lineAtPoint, uncoveredBox, wordInRect, type TextLine } from "@/lib/text-lines";
+import type { CanvasMode } from "@/hooks/useCanvasMode";
 import type { LoadedImage } from "@/hooks/useImageLoader";
 
 const MIN_DRAG_PX = 8;
@@ -14,16 +15,6 @@ const MIN_DRAG_PX = 8;
  * screenshot at 390 px wide, a 6 px thumb jitter is 18 image pixels.
  */
 const TAP_CSS_PX = 6;
-const OUTLINE = "rgba(239, 68, 68, 0.9)";
-const OUTLINE_SELECTED = "rgba(59, 130, 246, 1)";
-const GHOST_FILL = "rgba(239, 68, 68, 0.2)";
-const LABEL_BG = "rgba(185, 28, 28, 0.95)";
-const LABEL_BG_SELECTED = "rgba(37, 99, 235, 0.95)";
-// A skipped box is a marker, not a redaction: grey and empty, so the editing
-// canvas shows exactly what the export will contain.
-const OUTLINE_SKIPPED = "rgba(115, 115, 115, 0.9)";
-const LABEL_BG_SKIPPED = "rgba(82, 82, 82, 0.95)";
-
 type Options = {
   image: LoadedImage | null;
   rects: Rect[];
@@ -41,14 +32,20 @@ type Options = {
    */
   onPick?: (index: number, anchor: { left: number; top: number; width: number; height: number }) => void;
   /**
-   * When false the canvas ignores pointers entirely and stops capturing touch
-   * gestures, so the page scrolls normally. Used by the mobile Scroll mode.
+   * `draw`: a drag paints a rectangle and the canvas keeps the touch gesture to
+   * itself (`touch-action: none`). `scroll`: the browser pans and zooms, and the
+   * canvas only ever sees a tap — a finger that lifts where it landed.
+   *
+   * Both modes answer a tap the same way. That is the point: on a phone, reading
+   * a long screenshot and covering one line of it are the same session, and the
+   * old design made the user choose between scrolling and tapping.
    */
-  interactive?: boolean;
+  mode: CanvasMode;
   /**
-   * Recognised text lines, from the latest detection pass. When present, a tap
-   * covers the line it landed on — the fast path on a phone, where dragging a
-   * box exactly around a line of text is fiddly and a tap is not.
+   * Recognised text lines, from the latest detection pass. A tap then covers the
+   * line it landed on, which works in any language and regardless of what the
+   * patterns matched — the fallback that makes the tool useful on a document it
+   * cannot read.
    */
   lines?: TextLine[];
 };
@@ -74,7 +71,7 @@ export default function useCanvasEditor({
   selectedIndex,
   onAdd,
   onSelect,
-  interactive = true,
+  mode,
   lines = [],
   onPick,
 }: Options): CanvasEditor {
@@ -84,18 +81,28 @@ export default function useCanvasEditor({
   // the finger travelled on screen rather than by how far it travelled in a
   // 12-megapixel image.
   const startClientRef = useRef<{ x: number; y: number } | null>(null);
+  // In scroll mode nothing is captured and no rectangle is started, but the
+  // landing point is remembered so the lift can be judged as tap or swipe.
+  const tapCandidateRef = useRef<{
+    x: number;
+    y: number;
+    clientX: number;
+    clientY: number;
+    hit: number;
+  } | null>(null);
   const [ghost, setGhost] = useState<Rect | null>(null);
 
-  // Dropping out of draw mode must discard the drag anchor, otherwise a later
+  // Leaving draw mode mid-gesture must discard the drag anchor, otherwise a later
   // pointer move would draw a box from a gesture the user already abandoned.
-  // This only touches a ref, so it cannot trigger the state-in-effect warning;
-  // the repaint below keys off `interactive` and re-reads the ref.
+  // This only touches refs, so it cannot trigger the state-in-effect warning; the
+  // repaint below keys off `mode` and re-reads them.
   useEffect(() => {
-    if (!interactive) {
+    if (mode !== "draw") {
       startRef.current = null;
       startClientRef.current = null;
+      tapCandidateRef.current = null;
     }
-  }, [interactive]);
+  }, [mode]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -106,68 +113,18 @@ export default function useCanvasEditor({
     if (!ctx) {
       return;
     }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(image.bitmap, 0, 0, canvas.width, canvas.height);
-
-    const scale = canvas.width / image.width;
-    const line = Math.max(1.5, 2 / scale);
-    // In scroll mode a stray ghost would imply drawing is still live.
-    const activeGhost = interactive ? ghost : null;
-    const boxes = activeGhost ? [...rects, activeGhost] : rects;
-
-    for (let index = 0; index < boxes.length; index += 1) {
-      const rect = boxes[index];
-      if (rect.w <= 0 || rect.h <= 0) {
-        continue;
-      }
-      const isGhost = activeGhost !== null && index === boxes.length - 1;
-      const isSelected = !isGhost && index === selectedIndex;
-      const isSkipped = !isGhost && rect.skip === true;
-
-      if (!isSkipped) {
-        ctx.fillStyle = GHOST_FILL;
-        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-      }
-      ctx.lineWidth = line;
-      ctx.strokeStyle = isSelected
-        ? OUTLINE_SELECTED
-        : isSkipped
-          ? OUTLINE_SKIPPED
-          : OUTLINE;
-      ctx.setLineDash(isSelected ? [] : [line * 3, line * 2]);
-      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-      ctx.setLineDash([]);
-
-      // The human-readable type name, never the internal key: a tag reading
-      // "credit_card" or "labelled" on someone's screenshot is an implementation
-      // detail leaking into the product.
-      const tag = rect.label ? (TYPE_LABELS[rect.label] ?? rect.label) : null;
-      if (tag) {
-        // The label lives in image space, so its font is scaled by 1/scale to
-        // stay readable no matter how far the canvas is shrunk on screen.
-        const fontSize = 12 / scale;
-        const padX = 4 / scale;
-        const padY = 3 / scale;
-        ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`;
-        const textWidth = ctx.measureText(tag).width;
-        const boxW = textWidth + padX * 2;
-        const boxH = fontSize + padY * 2;
-        const labelX = rect.x;
-        const labelY = rect.y - boxH - line;
-
-        ctx.fillStyle = isSelected
-          ? LABEL_BG_SELECTED
-          : isSkipped
-            ? LABEL_BG_SKIPPED
-            : LABEL_BG;
-        ctx.fillRect(labelX, labelY, boxW, boxH);
-        ctx.fillStyle = "#ffffff";
-        ctx.textBaseline = "top";
-        ctx.fillText(tag, labelX + padX, labelY + padY);
-      }
-    }
-  }, [ghost, image, interactive, rects, selectedIndex]);
+    paint({
+      ctx,
+      bitmap: image.bitmap,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      imageWidth: image.width,
+      rects,
+      // In scroll mode a stray ghost would imply drawing is still live.
+      ghost: mode === "draw" ? ghost : null,
+      selectedIndex,
+    });
+  }, [ghost, image, mode, rects, selectedIndex]);
 
   useEffect(() => {
     draw();
@@ -213,11 +170,26 @@ export default function useCanvasEditor({
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!image || !interactive) {
+      if (!image) {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
       const hit = hitTest(rects, point.x, point.y);
+
+      if (mode !== "draw") {
+        // Scroll mode: remember where the finger landed and decide nothing yet.
+        // Acting here would close the box editor the moment a pan begins, and a
+        // pan is exactly what this mode exists to allow.
+        tapCandidateRef.current = {
+          x: point.x,
+          y: point.y,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          hit,
+        };
+        return;
+      }
+
       if (hit >= 0) {
         onSelect(hit);
         // Report the hit as well as selecting it: the owner opens an editor
@@ -233,13 +205,13 @@ export default function useCanvasEditor({
       startClientRef.current = { x: event.clientX, y: event.clientY };
       setGhost({ x: point.x, y: point.y, w: 0, h: 0 });
     },
-    [image, interactive, onPick, onSelect, rects, toImagePoint, toViewportRect],
+    [mode, image, onPick, onSelect, rects, toImagePoint, toViewportRect],
   );
 
   const onPointerMove = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
       const start = startRef.current;
-      if (!start || !image || !interactive) {
+      if (!start || mode !== "draw" || !image) {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
@@ -251,11 +223,62 @@ export default function useCanvasEditor({
         ),
       );
     },
-    [image, interactive, toImagePoint],
+    [mode, image, toImagePoint],
+  );
+
+  /**
+   * What a tap does, identical in both modes: open the editor of the box under
+   * the finger, cover the recognised line under it, or dismiss the editor when
+   * there is nothing there. `hit` is the box found at the landing point.
+   */
+  const resolveTap = useCallback(
+    (x: number, y: number, hit: number) => {
+      if (!image) {
+        return;
+      }
+      if (hit >= 0) {
+        onSelect(hit);
+        onPick?.(hit, toViewportRect(rects[hit]));
+        return;
+      }
+      const line = lineAtPoint(lines, x, y);
+      if (line) {
+        const box = uncoveredBox(line, (word) =>
+          rects.some((rect) => wordInRect(word, rect)),
+        );
+        // null means every word on that line is already covered: tapping a black
+        // bar must not stack a second box on it.
+        if (box) {
+          const added = clampRect(box, image.width, image.height);
+          onAdd(added, toViewportRect(added));
+        }
+        return;
+      }
+      onSelect(-1);
+      onPick?.(-1, { left: 0, top: 0, width: 0, height: 0 });
+    },
+    [image, lines, onAdd, onPick, rects, onSelect, toViewportRect],
   );
 
   const onPointerUp = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
+      const candidate = tapCandidateRef.current;
+      tapCandidateRef.current = null;
+
+      // Scroll mode: only a finger that lifted where it landed counts. Anything
+      // longer was a pan or a zoom, which belongs to the browser, not to us.
+      if (candidate) {
+        const moved = Math.hypot(
+          event.clientX - candidate.clientX,
+          event.clientY - candidate.clientY,
+        );
+        if (moved < TAP_CSS_PX) {
+          const point = toImagePoint(event.clientX, event.clientY);
+          resolveTap(point.x, point.y, candidate.hit);
+        }
+        return;
+      }
+
       const start = startRef.current;
       const startClient = startClientRef.current;
       startRef.current = null;
@@ -264,10 +287,11 @@ export default function useCanvasEditor({
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
       setGhost(null);
-      if (!start || !startClient || !image || !interactive) {
+      if (!start || !startClient || !image || mode !== "draw") {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
+      const hit = hitTest(rects, start.x, start.y);
 
       // A tap covers the text line under the finger. It has to be tested before
       // the drag-length rule below, because a tap is precisely a drag too short
@@ -276,20 +300,9 @@ export default function useCanvasEditor({
         event.clientX - startClient.x,
         event.clientY - startClient.y,
       );
-      if (moved < TAP_CSS_PX && lines.length > 0) {
-        const line = lineAtPoint(lines, point.x, point.y);
-        if (line) {
-          const box = uncoveredBox(line, (word) =>
-            rects.some((rect) => wordInRect(word, rect)),
-          );
-          // null means every word on that line is already covered: tapping a
-          // black bar must not stack a second box on it.
-          if (box) {
-            const added = clampRect(box, image.width, image.height);
-            onAdd(added, toViewportRect(added));
-          }
-          return;
-        }
+      if (moved < TAP_CSS_PX) {
+        resolveTap(point.x, point.y, hit);
+        return;
       }
 
       const final = clampRect(
@@ -302,7 +315,25 @@ export default function useCanvasEditor({
       }
       onAdd(final, toViewportRect(final));
     },
-    [image, interactive, lines, onAdd, rects, toImagePoint, toViewportRect],
+    [image, mode, onAdd, rects, resolveTap, toImagePoint, toViewportRect],
+  );
+
+  /**
+   * The browser took the gesture (a pan began, or another pointer interrupted).
+   * Discard rather than finish: mapping cancel to the up handler would commit a
+   * rectangle from a swipe the user meant as scrolling.
+   */
+  const onPointerCancel = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      tapCandidateRef.current = null;
+      startRef.current = null;
+      startClientRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      setGhost(null);
+    },
+    [],
   );
 
   return {
@@ -311,7 +342,7 @@ export default function useCanvasEditor({
       onPointerDown,
       onPointerMove,
       onPointerUp,
-      onPointerCancel: onPointerUp,
+      onPointerCancel,
     },
   };
 }

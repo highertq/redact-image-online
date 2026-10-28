@@ -45,12 +45,12 @@ const MODE_OPTIONS: { value: CanvasMode; label: string; hint: string }[] = [
   {
     value: "draw",
     label: "Draw",
-    hint: "A drag draws a box; after a scan, tap a line to cover it. The page will not scroll from the image.",
+    hint: "Drag to draw a box; tap to cover a line or edit a box. While Draw is on, a swipe over the image draws instead of scrolling.",
   },
   {
     value: "scroll",
     label: "Scroll",
-    hint: "The page scrolls and zooms normally. Switch to Draw to mark boxes.",
+    hint: "Swipe to read the image. A tap still covers a line after a scan, or opens a box to edit — only drawing by drag needs Draw.",
   },
 ];
 
