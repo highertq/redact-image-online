@@ -47,3 +47,6 @@ eng.traineddata
 
 # OCR runtime assets, copied from node_modules by scripts/copy-ocr-assets.mjs
 public/ocr/
+
+# Separate project, its own repo
+出海入境游/
