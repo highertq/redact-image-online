@@ -12,7 +12,7 @@ const PATH = "/methodology";
 export const metadata: Metadata = contentMetadata({
   title: "How Detection Works",
   description:
-    "The exact rules behind auto-detect: eight pattern types with checksums, label rules for fields no pattern knows, priority-based overlap resolution, and the known cases that get missed.",
+    "The exact rules behind auto-detect: nine pattern types with checksums, label rules in twelve languages for fields no pattern knows, priority-based overlap resolution, and the cases that get missed.",
   path: PATH,
 });
 
@@ -58,9 +58,14 @@ const RULES = [
     note: "Narrowest match. Other key formats are not recognized.",
   },
   {
+    type: "IBAN",
+    rule: "two letters, two check digits, up to 30 alphanumerics, in or out of groups",
+    note: "Must pass the mod-97 checksum, so a product code does not read as a bank account.",
+  },
+  {
     type: "Labelled field",
     rule:
-      "Phone, Email, Card, Account, Order, Total, Name, Address, or 手机号, 身份证, 银行卡, 订单号, 收款方, 金额 followed by a value",
+      "a field name — Phone, Email, Card, Account, IBAN, Order, Total, Name, Address and their equivalents in twelve languages, including 手机号, 電話番号, Téléphone, رقم الجوال — followed by a value",
     note: "Covers the value, not the label. This is the rule that works on documents the patterns were never written for.",
   },
 ];
@@ -68,6 +73,7 @@ const RULES = [
 const PRIORITY = [
   "API key",
   "Email",
+  "IBAN",
   "Card number",
   "SSN",
   "China ID card",
@@ -129,10 +135,17 @@ export default function MethodologyPage() {
             </p>
             <p>
               The recognition models are served from this site, not from a third
-              party CDN, and the engine can read English and Simplified Chinese.
-              A Chinese payment receipt and an English bank statement are both
-              in scope; a document in another script is read only where its
-              digits and Latin words resemble these.
+              party CDN. Twelve of them can be switched on, covering Latin,
+              Cyrillic, Arabic, Han and Kana script; the editor uses at most four
+              at a time, because the engine merges the selected models into one
+              recogniser and past that point each extra language costs accuracy
+              rather than buying coverage.
+            </p>
+            <p>
+              Everything after recognition is script-independent. A card number,
+              an IBAN, and a value sitting behind a printed field name are
+              recognised the same way whatever language surrounds them, and a tap
+              on any recognised line covers it in any script at all.
             </p>
             <p>
               This step is the weak link, and it fails in predictable ways:
@@ -149,7 +162,7 @@ export default function MethodologyPage() {
           <Prose>
             <p>
               Recognized words are rejoined into lines, then scanned line by
-              line. Eight pattern rules and one label rule are implemented, and
+              line. Nine pattern rules and one label rule are implemented, and
               there are no others. Matching per line rather than over the whole
               page is deliberate: a number at the end of one row must not fuse
               with digits at the start of the next and invent a card number that

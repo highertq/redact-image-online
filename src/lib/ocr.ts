@@ -26,25 +26,73 @@ export type OcrProgress = {
 };
 
 /**
- * Recognition languages. The UI speaks in these three settings; tesseract gets
- * the language codes behind them.
+ * A recognisable language the visitor can switch on.
  *
- * `both` is the default. Loading `chi_sim` costs 1.7 MB once, and the failure it
- * prevents — a Chinese bill returning "no sensitive patterns found" — is the
- * kind of wrong answer no follow-up can undo.
+ * `bytes` is the compressed model size we serve, shown next to each option so
+ * the choice is made with the real cost visible rather than discovered on a
+ * phone connection.
  */
-export type OcrLangsMode = "en" | "zh" | "both";
-
-export const OCR_LANGS_DEFAULT: OcrLangsMode = "both";
-
-const TESSERACT_LANGS: Record<OcrLangsMode, string> = {
-  en: "eng",
-  zh: "chi_sim",
-  both: "eng+chi_sim",
+export type OcrPack = {
+  id: string;
+  /** Endonym — the language's own name for itself. */
+  label: string;
+  bytes: number;
 };
 
-export function isOcrLangsMode(value: unknown): value is OcrLangsMode {
-  return value === "en" || value === "zh" || value === "both";
+/**
+ * The packs we ship. Chosen for script coverage rather than speaker count: one
+ * Latin pack already gets you most of Western Europe's digits and letterforms,
+ * so the marginal value of `nld` after `deu` is small, while Cyrillic, Arabic,
+ * Han and Kana each unlock a script nothing else covers.
+ */
+export const OCR_PACKS: readonly OcrPack[] = [
+  { id: "eng", label: "English", bytes: 2_952_873 },
+  { id: "spa", label: "Español", bytes: 2_100_190 },
+  { id: "fra", label: "Français", bytes: 707_406 },
+  { id: "deu", label: "Deutsch", bytes: 1_333_102 },
+  { id: "por", label: "Português", bytes: 1_392_239 },
+  { id: "ita", label: "Italiano", bytes: 1_660_998 },
+  { id: "rus", label: "Русский", bytes: 2_679_598 },
+  { id: "tur", label: "Türkçe", bytes: 2_141_291 },
+  { id: "ara", label: "العربية", bytes: 1_661_906 },
+  { id: "chi_sim", label: "简体中文", bytes: 1_718_768 },
+  { id: "jpn", label: "日本語", bytes: 2_030_256 },
+  { id: "kor", label: "한국어", bytes: 1_572_336 },
+];
+
+/**
+ * Default selection: English (the digit and Latin letterforms every other pack
+ * also needs a fallback for), Spanish (the second language of the site's main
+ * audience, and of much of the Western hemisphere's paperwork), and Simplified
+ * Chinese (Han characters, which also carry a useful share of Japanese text).
+ *
+ * Measured on mock bills for all three scripts, adding these to one another
+ * costs about 0.1-0.4 s per pass and loses no detections; loading none of them
+ * is what loses detections — a document in an unread script comes back "nothing
+ * sensitive here", which is the one answer a privacy tool must not give
+ * confidently. Anyone redacting Japanese, Russian or Arabic paperwork ticks one
+ * more box, and that choice is remembered.
+ */
+export const OCR_PACKS_DEFAULT: readonly string[] = ["eng", "spa", "chi_sim"];
+
+/**
+ * tesseract merges the selected models into one recogniser. Each extra language
+ * adds download weight and dilutes accuracy, and past about four the result
+ * starts misreading text it handled fine alone — so the list is capped rather
+ * than "select everything".
+ */
+export const OCR_PACKS_MAX = 4;
+
+const PACK_IDS = new Set(OCR_PACKS.map((pack) => pack.id));
+
+export function isOcrPackId(value: unknown): value is string {
+  return typeof value === "string" && PACK_IDS.has(value);
+}
+
+/** Language string in the form tesseract wants: "eng+spa+chi_sim". */
+export function tesseractLangs(ids: readonly string[]): string {
+  const clean = ids.filter(isOcrPackId);
+  return (clean.length > 0 ? clean : [...OCR_PACKS_DEFAULT]).join("+");
 }
 
 /**
@@ -237,10 +285,10 @@ async function prepareImage(source: OcrSource, scale: number): Promise<Blob> {
  */
 export async function recognizeWords(
   source: OcrSource,
-  langsMode: OcrLangsMode,
+  packIds: readonly string[],
   onProgress?: (progress: OcrProgress) => void,
 ): Promise<OcrWord[]> {
-  const langs = TESSERACT_LANGS[langsMode];
+  const langs = tesseractLangs(packIds);
   const scale = ocrScaleFor(source.width, source.height);
 
   let worker: Worker;

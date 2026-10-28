@@ -126,7 +126,7 @@ export const PHONE_NUMBER: Scenario = {
     {
       question: "Does it handle numbers from other countries?",
       answer:
-        "Chinese mobile numbers and resident ID numbers are matched, along with the US formats above. Most other conventions group digits differently and are not patterns the matcher knows, so expect to box those by hand and verify at full zoom.",
+        "US formats, plus Chinese mobile and resident ID numbers and IBAN for international accounts. Most national numbering plans group digits differently and are not patterns the matcher knows, so a value behind a printed field name is covered by the label rule and anything else needs a box drawn by hand and checked at full zoom.",
     },
     {
       question: "Will the exported PNG still carry metadata?",

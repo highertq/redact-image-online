@@ -75,6 +75,13 @@ export function luhnValid(digits: string): boolean {
 /**
  * Runs one pattern over `text` and keeps the hits `accept` approves. The regex
  * is cloned so a caller's `/g` lastIndex can never leak between runs.
+ *
+ * A rejected match resumes the scan one character after it started, not after it
+ * ended. That distinction is load-bearing: the card pattern is greedy, so inside
+ * "GB82WEST12345698765432 4111 1111 1111 1111" it first claims a run starting
+ * deep in the IBAN and ending halfway through the real card number. Skipping to
+ * the end of that rejected run would step over the card number and report
+ * nothing at all.
  */
 export function collect(
   text: string,
@@ -91,9 +98,12 @@ export function collect(
     const end = start + value.length;
     if (accept(value, start, end)) {
       results.push({ type, start, end, value });
+    } else {
+      // Rejected: retry from inside the run in case a valid match starts later.
+      regex.lastIndex = start + 1;
     }
     if (value.length === 0) {
-      regex.lastIndex += 1;
+      regex.lastIndex = start + 1;
     }
     hit = regex.exec(text);
   }

@@ -34,18 +34,73 @@ export type TextLine = {
   h: number;
 };
 
-/** Han ranges that tesseract splits with spaces between characters. */
-const CJK = /[㐀-䶿一-鿿豈-﫿]/;
+/**
+ * Scripts whose characters tesseract emits as separate "words", so a line of
+ * them arrives riddled with spaces that are not in the document. Han, Kana and
+ * Hangul all behave this way; Latin, Cyrillic and Arabic do not.
+ */
+const TIGHT_SCRIPT =
+  /[㐀-䶿一-鿿豈-﫿぀-ゟ゠-ヿ가-힯ᄀ-ᇿ]/;
 
-function isCJK(char: string | undefined): boolean {
-  return char !== undefined && CJK.test(char);
+function isTight(char: string | undefined): boolean {
+  return char !== undefined && TIGHT_SCRIPT.test(char);
 }
 
 /**
- * Drops a space that sits between two Han characters, keeping every other
- * space: "证 件 号 330281" becomes "证件号 330281". A space between a Han
- * character and a digit is real separation and must survive, or a number glued
- * to its label would read as one long digit run.
+ * Non-ASCII decimal digit blocks mapped onto their ASCII value, longest list
+ * first so the ranges stay readable. Offset-safe by construction: every mapping
+ * replaces one character with one character, so `compactMap` still lines up with
+ * `text` and a match can be traced back to the right word box.
+ *
+ * Without this, an Arabic receipt printed in Arabic-Indic digits (٣٣٠٢…) fails
+ * every number rule in the tool, because each rule is written against 0-9.
+ */
+const DIGIT_BLOCKS = [
+  0x0660, // Arabic-Indic
+  0x06f0, // Extended Arabic-Indic (Persian, Urdu)
+  0x0966, // Devanagari
+  0x09e6, // Bengali
+  0x0a66, // Gurmukhi
+  0x0ae6, // Gujarati
+  0x0b66, // Oriya
+  0x0be6, // Tamil
+  0x0c66, // Telugu
+  0x0ce6, // Kannada
+  0x0d66, // Malayalam
+  0x0e50, // Thai
+  0x0ed0, // Lao
+  0x1040, // Myanmar
+  0x17e0, // Khmer
+];
+
+const DIGIT_MAP = new Map<number, string>();
+for (const base of DIGIT_BLOCKS) {
+  for (let d = 0; d <= 9; d += 1) {
+    DIGIT_MAP.set(base + d, String(d));
+  }
+}
+
+/** Fullwidth digits (０-９) are a single range and are handled separately. */
+const FULLWIDTH_DIGIT_START = 0xff10;
+
+function normalizeChar(char: string): string {
+  const code = char.charCodeAt(0);
+  const mapped = DIGIT_MAP.get(code);
+  if (mapped !== undefined) {
+    return mapped;
+  }
+  if (code >= FULLWIDTH_DIGIT_START && code <= FULLWIDTH_DIGIT_START + 9) {
+    return String(code - FULLWIDTH_DIGIT_START);
+  }
+  return char;
+}
+
+/**
+ * Builds the string the rules match against: spaces between characters of a
+ * tightly-set script are dropped, and any decimal digit is rewritten as ASCII.
+ * Every other space survives — a space between a Han label and its number is
+ * real separation, and removing it would glue the two into one long alphanumeric
+ * run that matches nothing.
  */
 function compactLine(text: string): { compact: string; map: number[] } {
   const chars = [...text];
@@ -62,11 +117,11 @@ function compactLine(text: string): { compact: string; map: number[] } {
       while (next < chars.length && chars[next] === " ") {
         next += 1;
       }
-      if (isCJK(chars[prev]) && isCJK(chars[next])) {
+      if (isTight(chars[prev]) && isTight(chars[next])) {
         return;
       }
     }
-    compact += char;
+    compact += normalizeChar(char);
     map.push(index);
   });
 

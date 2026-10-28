@@ -146,6 +146,36 @@ describe("wordsToBoxes", () => {
     expect(boxes[0].x).toBe(86);
   });
 
+  it("boxes a Japanese label split character by character by the engine", () => {
+    // What tesseract actually returns for 電話番号, end to end: the split is
+    // undone in groupLines, the label matches, and the number gets covered.
+    const words = [
+      word("電", 0, 0, 20, 20, 0),
+      word("話", 25, 0, 45, 20, 0),
+      word("番", 50, 0, 70, 20, 0),
+      word("号", 75, 0, 95, 20, 0),
+      word("0312345678", 100, 0, 200, 20, 0),
+    ];
+    const boxes = wordsToBoxes(words);
+    expect(types(boxes)).toEqual(["labelled"]);
+    expect(boxes[0].x).toBe(96);
+  });
+
+  it("boxes an IBAN printed in four-character groups", () => {
+    const words = [
+      word("IBAN", 0, 0, 50, 20, 0),
+      word("DE89", 60, 0, 110, 20, 0),
+      word("3704", 115, 0, 165, 20, 0),
+      word("0044", 170, 0, 220, 20, 0),
+      word("0532", 225, 0, 275, 20, 0),
+      word("0130", 280, 0, 330, 20, 0),
+      word("00", 335, 0, 365, 20, 0),
+    ];
+    const boxes = wordsToBoxes(words);
+    // "IBAN" is itself a label, so the whole value run is covered as one box.
+    expect(types(boxes)).toEqual(["labelled"]);
+  });
+
   it("reports a Chinese mobile number and resident ID by type", () => {
     const words = [
       word("13800138000", 0, 0, 110, 20, 0),

@@ -3,6 +3,7 @@
 import DetectStatus from "@/components/DetectStatus";
 import TypeFilter from "@/components/TypeFilter";
 import {
+  IconCheck,
   IconDownload,
   IconRedo,
   IconScan,
@@ -10,7 +11,8 @@ import {
   IconUndo,
 } from "@/components/Icons";
 import type { DetectMessage } from "@/hooks/useAutoDetect";
-import type { OcrLangsMode, OcrStage } from "@/lib/ocr";
+import type { OcrPacksState } from "@/hooks/useOcrLangs";
+import { OCR_PACKS, OCR_PACKS_MAX, type OcrStage } from "@/lib/ocr";
 import type { TypeChip } from "@/lib/detect-types";
 import type { FillStyle } from "@/lib/image";
 
@@ -31,28 +33,6 @@ const MODE_OPTIONS: { value: CanvasMode; label: string; hint: string }[] = [
   },
 ];
 
-/**
- * Recognition languages. "Chinese + English" is the default: the extra 1.7 MB is
- * paid once and cached, while an unrecognised script costs the user a bill they
- * thought was redacted.
- */
-const LANG_OPTIONS: { value: OcrLangsMode; label: string; hint: string }[] = [
-  {
-    value: "both",
-    label: "EN + 中文",
-    hint: "Reads English and Simplified Chinese text. Downloads both models on first use.",
-  },
-  {
-    value: "en",
-    label: "English",
-    hint: "English only, which downloads less data and runs faster.",
-  },
-  {
-    value: "zh",
-    label: "中文",
-    hint: "Simplified Chinese only. Latin digits and addresses are still read.",
-  },
-];
 
 type ToolbarProps = {
   fillStyle: FillStyle;
@@ -78,8 +58,7 @@ type ToolbarProps = {
   typeChips: TypeChip[];
   enabledTypes: readonly string[];
   onToggleType: (type: string) => void;
-  langs: OcrLangsMode;
-  onLangsChange: (langs: OcrLangsMode) => void;
+  packs: OcrPacksState;
   showModeSwitch: boolean;
   canvasMode: CanvasMode;
   onCanvasModeChange: (mode: CanvasMode) => void;
@@ -128,8 +107,7 @@ export default function EditorToolbar({
   typeChips,
   enabledTypes,
   onToggleType,
-  langs,
-  onLangsChange,
+  packs,
   showModeSwitch,
   canvasMode,
   onCanvasModeChange,
@@ -189,32 +167,83 @@ export default function EditorToolbar({
           After a scan, tap any text on the image to cover that line — useful for
           anything the patterns miss.
         </p>
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-label font-semibold tracking-wide text-ink-3 uppercase">
-            Recognition language
-          </legend>
-          <div className="grid grid-cols-3 gap-1 rounded-md bg-surface-2 p-1">
-            {LANG_OPTIONS.map((option) => (
-              <label
-                key={option.value}
-                className={segmentClass(langs === option.value)}
+        <details className="group rounded-md border border-line bg-surface">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-md px-3 text-body-sm transition-hover hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+            <span className="text-label font-semibold uppercase tracking-wide text-ink-3">
+              Languages to read
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="text-label tabular-nums text-ink-2">
+                {packs.ids.length}/{OCR_PACKS_MAX} ·{" "}
+                {(packs.bytes / 1_048_576).toFixed(1)} MB
+              </span>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4 text-ink-3 transition-transform group-open:rotate-180"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <input
-                  type="radio"
-                  name="ocr-langs"
-                  value={option.value}
-                  checked={langs === option.value}
-                  onChange={() => onLangsChange(option.value)}
-                  className="sr-only"
-                />
-                {option.label}
-              </label>
-            ))}
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </span>
+          </summary>
+          <div className="flex flex-col gap-2 border-t border-line px-3 pb-3 pt-2">
+            <p className="text-label leading-relaxed text-ink-3">
+              Text recognition models, by language. Numbers, card and IBAN
+              formats, and labelled fields are matched whatever language surrounds
+              them, so this list only decides which scripts the engine can read.
+              Four at most — the engine merges the selected models, and past that
+              each extra language costs accuracy.
+            </p>
+            <div className="grid grid-cols-2 gap-1">
+              {OCR_PACKS.map((pack) => {
+                const checked = packs.has(pack.id);
+                const blocked = !checked && packs.atLimit;
+                return (
+                  <label
+                    key={pack.id}
+                    className={`flex min-h-11 items-center gap-2 rounded-md border px-2 text-body-sm transition-state has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
+                      checked
+                        ? "border-line-strong bg-surface-2 font-medium text-ink"
+                        : "border-line bg-paper text-ink-2"
+                    } ${blocked ? "opacity-40" : "cursor-pointer hover:border-line-strong"}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={blocked}
+                      onChange={() => packs.toggle(pack.id)}
+                      className="sr-only"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={`grid h-4 w-4 shrink-0 place-items-center rounded-sm border ${
+                        checked
+                          ? "border-ink bg-ink text-paper"
+                          : "border-line-strong bg-paper"
+                      }`}
+                    >
+                      {checked ? <IconCheck className="h-3 w-3" /> : null}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{pack.label}</span>
+                    <span className="font-mono text-label tabular-nums text-ink-3">
+                      {(pack.bytes / 1_048_576).toFixed(1)}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-label leading-relaxed text-ink-3">
+              Reading {packs.packs.map((pack) => pack.label).join(", ")} ·{" "}
+              {(packs.bytes / 1_048_576).toFixed(1)} MB, downloaded once and cached
+              for later images.
+            </p>
           </div>
-          <p className="text-label leading-relaxed text-ink-3">
-            {LANG_OPTIONS.find((option) => option.value === langs)?.hint}
-          </p>
-        </fieldset>
+        </details>
       </div>
 
       <div className="h-px bg-line" />

@@ -30,8 +30,29 @@ const CORE_VARIANTS = [
   "tesseract-core-relaxedsimd-lstm.wasm.js",
 ];
 
-/** `4.0.0_best_int` is the quantised LSTM-only traineddata, the smallest set. */
-const LANGUAGES = ["eng", "chi_sim"];
+/**
+ * Recognition language packs. `4.0.0_best_int` is the quantised LSTM-only
+ * traineddata — the smallest variant, and the only one the pinned core can use.
+ *
+ * The list is a judgement call, not "everything": these are the packs behind the
+ * selectable languages in the editor, roughly ordered by how much of the
+ * world's screenshots they cover. Only the packs a visitor actually ticks are
+ * downloaded by their browser; shipping the list costs disk, not user bandwidth.
+ */
+const LANGUAGES = [
+  "eng",
+  "spa",
+  "fra",
+  "deu",
+  "por",
+  "ita",
+  "rus",
+  "tur",
+  "ara",
+  "chi_sim",
+  "jpn",
+  "kor",
+];
 
 const copies = [];
 

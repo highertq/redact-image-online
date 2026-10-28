@@ -1,4 +1,5 @@
 import { detectCN, idCard18Valid } from "@/lib/pii-cn";
+import { detectIntl } from "@/lib/pii-intl";
 import {
   collect,
   hasAlnumBoundary,
@@ -18,7 +19,8 @@ export type PiiType =
   | "ipv4"
   | "api_key"
   | "cn_phone"
-  | "cn_id";
+  | "cn_id"
+  | "iban";
 
 /**
  * Stronger, narrower signals win when two patterns claim overlapping
@@ -28,12 +30,13 @@ export type PiiType =
 const PRIORITY: Record<string, number> = {
   api_key: 0,
   email: 1,
-  credit_card: 2,
-  ssn: 3,
-  cn_id: 4,
-  us_phone: 5,
-  cn_phone: 6,
-  ipv4: 7,
+  iban: 2,
+  credit_card: 3,
+  ssn: 4,
+  cn_id: 5,
+  us_phone: 6,
+  cn_phone: 7,
+  ipv4: 8,
 };
 
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
@@ -136,9 +139,11 @@ export function detectPII(text: string): PiiMatch[] {
     }),
   );
 
-  // Chinese mobile numbers and resident ID numbers, then one shared pass to
-  // decide which type owns each stretch of characters.
+  // Chinese mobile numbers and resident ID numbers, then IBAN for anything
+  // outside the US numbering plan, then one shared pass to decide which type
+  // owns each stretch of characters.
   found.push(...detectCN(text));
+  found.push(...detectIntl(text));
 
   return resolveOverlaps(found, PRIORITY);
 }

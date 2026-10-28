@@ -7,7 +7,6 @@ import type { Rect } from "@/lib/geometry";
 import {
   OcrLoadError,
   recognizeWords,
-  type OcrLangsMode,
   type OcrProgress,
   type OcrSource,
   type OcrStage,
@@ -36,7 +35,7 @@ export type DetectState = {
   run: (
     source: OcrSource | null,
     existing: readonly Rect[],
-    langs: OcrLangsMode,
+    packs: readonly string[],
   ) => Promise<Rect[]>;
   clear: () => void;
 };
@@ -78,7 +77,7 @@ export default function useAutoDetect(): DetectState {
     async (
       source: OcrSource | null,
       existing: readonly Rect[],
-      langs: OcrLangsMode,
+      packs: readonly string[],
     ) => {
       if (!source) {
         return [];
@@ -104,7 +103,7 @@ export default function useAutoDetect(): DetectState {
       };
 
       try {
-        const words = await recognizeWords(source, langs, onProgress);
+        const words = await recognizeWords(source, packs, onProgress);
         const recognised = groupLines(words);
         setLines(recognised);
 

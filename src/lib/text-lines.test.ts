@@ -95,6 +95,61 @@ describe("groupLines with Chinese text", () => {
   });
 });
 
+describe("groupLines with other tightly-set scripts", () => {
+  it("joins Japanese kana and kanji the same way as Han", () => {
+    const line = groupLines([
+      word("電", 0, 0, 20, 20, 0),
+      word("話", 25, 0, 45, 20, 0),
+      word("番", 50, 0, 70, 20, 0),
+      word("号", 75, 0, 95, 20, 0),
+      word("0312345678", 100, 0, 200, 20, 0),
+    ])[0];
+    expect(line.compact).toBe("電話番号 0312345678");
+  });
+
+  it("joins Hangul syllables", () => {
+    const line = groupLines([
+      word("주", 0, 0, 20, 20, 0),
+      word("소", 25, 0, 45, 20, 0),
+      word("지", 50, 0, 70, 20, 0),
+      word("번", 75, 0, 95, 20, 0),
+    ])[0];
+    expect(line.compact).toBe("주소지번");
+  });
+
+  it("leaves spaced scripts alone", () => {
+    // Cyrillic and Latin words are separated by real spaces. Compacting them
+    // would produce "Телефон4155550132" and break every rule instead.
+    const line = groupLines([
+      word("Телефон", 0, 0, 70, 20, 0),
+      word("+79161234567", 80, 0, 200, 20, 0),
+    ])[0];
+    expect(line.compact).toBe("Телефон +79161234567");
+  });
+});
+
+describe("groupLines digit normalisation", () => {
+  it("rewrites Arabic-Indic digits as ASCII so number rules can fire", () => {
+    // One character in, one character out: offsets still line up with the words.
+    const line = groupLines([
+      word("الرقم", 0, 0, 50, 20, 0),
+      word("١٣٨٠٠١٣٨٠٠٠", 60, 0, 160, 20, 0),
+    ])[0];
+    expect(line.compact).toBe("الرقم 13800138000");
+    expect(line.compactMap.length).toBe(line.compact.length);
+  });
+
+  it("rewrites Persian, Devanagari and fullwidth digits", () => {
+    expect(groupLines([word("۰۱۲۳۴۵۶۷۸۹", 0, 0, 90, 20, 0)])[0].compact).toBe("0123456789");
+    expect(groupLines([word("०१२३४", 0, 0, 50, 20, 0)])[0].compact).toBe("01234");
+    expect(groupLines([word("８８５０", 0, 0, 50, 20, 0)])[0].compact).toBe("8850");
+  });
+
+  it("does not touch Thai baht or other currency characters", () => {
+    expect(groupLines([word("฿1,250.00", 0, 0, 90, 20, 0)])[0].compact).toBe("฿1,250.00");
+  });
+});
+
 describe("lineAtPoint", () => {
   const lines = groupLines([
     word("13800138000", 100, 40, 240, 62, 0),

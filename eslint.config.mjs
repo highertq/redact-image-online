@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     // Generated at build time from node_modules by scripts/copy-ocr-assets.mjs:
     // vendored WASM and worker bundles, never source we lint.
     "public/ocr/**",
+    // A different project that happens to live in this folder (Astro + Cloudflare
+    // Worker). Its types belong to its own toolchain, not to this Next app.
+    "出海入境游/**",
   ]),
 ]);
 

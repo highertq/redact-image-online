@@ -144,7 +144,7 @@ export const SCREENSHOT: Scenario = {
     {
       question: "Does the tool find names automatically?",
       answer:
-        "Only when a field name stands in front of them. The patterns are email, phone, SSN, card number, IPv4, API keys, and Chinese mobile and ID numbers; a separate rule covers the value after a label such as Name or 姓名. A username in running text, or a job title, still needs a box drawn by hand.",
+        "Only when a field name stands in front of them. Nine rules match fixed formats (email, phone, SSN, card number, IBAN, IPv4, API keys, and Chinese mobile and ID numbers); a separate rule covers the value printed after a field name in any of twelve languages. A username in running text, or a job title, still needs a box drawn by hand.",
     },
     {
       question: "What happens to the screenshot after I download it?",
