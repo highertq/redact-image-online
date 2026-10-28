@@ -15,12 +15,18 @@ type Props = {
  * column on desktop (always visible, static) and a bottom drawer on a phone
  * (toggled by the action bar). Only visibility lives here — the controls are
  * passed in so their state stays in the editor.
+ *
+ * On a phone the drawer is capped at 62% of the viewport rather than allowed to
+ * grow to near-full height. It is a sheet over the editor, and a user who cannot
+ * see the image while changing a fill style has lost the thing they were working
+ * on. The gesture-mode switch used to live in here too, which meant the only way
+ * out of a captured swipe was hidden behind the panel doing the capturing.
  */
 export default function ToolPanel({ open, onClose, children }: Props) {
   return (
     <div
       id="tool-panel"
-      className={`fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-lg border-t border-line bg-paper p-4 shadow-pop transition-page max-lg:bottom-[calc(3.75rem+env(safe-area-inset-bottom))] lg:static lg:z-auto lg:max-h-none lg:translate-y-0 lg:overflow-visible lg:rounded-lg lg:border lg:border-line lg:bg-surface lg:p-4 lg:opacity-100 lg:shadow-none ${
+      className={`fixed inset-x-0 bottom-0 z-50 max-h-[62dvh] overflow-y-auto rounded-t-lg border-t border-line bg-paper p-4 shadow-pop transition-page max-lg:bottom-[calc(3.75rem+env(safe-area-inset-bottom))] lg:static lg:z-auto lg:max-h-none lg:translate-y-0 lg:overflow-visible lg:rounded-lg lg:border lg:border-line lg:bg-surface lg:p-4 lg:opacity-100 lg:shadow-none ${
         open
           ? "visible translate-y-0 opacity-100"
           : "invisible translate-y-full opacity-0 lg:visible"

@@ -28,7 +28,12 @@ type Options = {
   image: LoadedImage | null;
   rects: Rect[];
   selectedIndex: number;
-  onAdd: (rect: Rect) => void;
+  /**
+   * A finished rectangle, plus where it sits in viewport coordinates. Only the
+   * canvas knows the scale, so the caller can anchor an editor to the box without
+   * measuring the element itself.
+   */
+  onAdd: (rect: Rect, anchor: { left: number; top: number; width: number; height: number }) => void;
   onSelect: (index: number) => void;
   /**
    * Fires when a box is clicked, with its position in viewport coordinates so
@@ -280,7 +285,8 @@ export default function useCanvasEditor({
           // null means every word on that line is already covered: tapping a
           // black bar must not stack a second box on it.
           if (box) {
-            onAdd(clampRect(box, image.width, image.height));
+            const added = clampRect(box, image.width, image.height);
+            onAdd(added, toViewportRect(added));
           }
           return;
         }
@@ -294,9 +300,9 @@ export default function useCanvasEditor({
       if (Math.min(final.w, final.h) < MIN_DRAG_PX) {
         return;
       }
-      onAdd(final);
+      onAdd(final, toViewportRect(final));
     },
-    [image, interactive, lines, onAdd, rects, toImagePoint],
+    [image, interactive, lines, onAdd, rects, toImagePoint, toViewportRect],
   );
 
   return {

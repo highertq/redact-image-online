@@ -6,7 +6,7 @@ import BoxPopover from "@/components/BoxPopover";
 import CanvasStage, { type FitMode } from "@/components/CanvasStage";
 import { PRIVACY_NOTE } from "@/components/privacy-note";
 import EditorStatus from "@/components/EditorStatus";
-import EditorToolbar, { type CanvasMode } from "@/components/EditorToolbar";
+import EditorToolbar from "@/components/EditorToolbar";
 import ImageIntake from "@/components/ImageIntake";
 import MobileActionBar from "@/components/MobileActionBar";
 import ToolPanel from "@/components/ToolPanel";
@@ -18,6 +18,7 @@ import useEditorShortcuts from "@/hooks/useEditorShortcuts";
 import useExportPng from "@/hooks/useExportPng";
 import useFileDrop from "@/hooks/useFileDrop";
 import useImageLoader from "@/hooks/useImageLoader";
+import useCanvasMode from "@/hooks/useCanvasMode";
 import useIsCoarsePointer from "@/hooks/useIsCoarsePointer";
 import useDetectTypes from "@/hooks/useDetectTypes";
 import useOcrPacks from "@/hooks/useOcrLangs";
@@ -33,7 +34,6 @@ export default function Redactor() {
   const [exportError, setExportError] = useState<string | null>(null);
 
   const [notice, setNotice] = useState<string | null>(null);
-  const [canvasMode, setCanvasMode] = useState<CanvasMode>("draw");
   const [toolsOpen, setToolsOpen] = useState(false);
   // On a phone the editor takes the viewport by default; collapsing it puts the
   // stage back in the page flow.
@@ -42,10 +42,12 @@ export default function Redactor() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isCoarsePointer = useIsCoarsePointer();
+  // A finger device starts in Scroll: Draw captures every touch gesture, which
+  // is right for marking boxes and fatal for reading a long screenshot.
+  const { mode: canvasMode, setMode: setCanvasMode } = useCanvasMode(isCoarsePointer);
   const ocrPacks = useOcrPacks();
-  // Non-touch devices never see the switch, so their canvas stays interactive
-  // regardless of the stored mode.
-  const interactive = !isCoarsePointer || canvasMode === "draw";
+  // The hook forces "draw" for a fine pointer, so this is the whole rule.
+  const interactive = canvasMode === "draw";
 
   const {
     running: detecting,
@@ -57,6 +59,7 @@ export default function Redactor() {
     run: runDetect,
     clear: clearDetectResult,
   } = useAutoDetect();
+
 
   // The paste listener lives inside useImageLoader, but the resulting file has
   // to run through the same "reset boxes, clear detection" path as a picked
@@ -87,39 +90,21 @@ export default function Redactor() {
     onRectsRemoved: detectTypes.syncPool,
   });
 
-  // `useCanvasEditor` needs `onAdd`, but `onAdd` needs the canvas element to
-  // anchor a new box's editor. This ref breaks that cycle: it is filled in as
-  // soon as the editor returns, long before any pointer event can fire.
-  const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
-
-  const anchorForRect = useCallback((rect: Rect) => {
-    const canvas = canvasElementRef.current;
-    if (!canvas) {
-      return null;
-    }
-    const box = canvas.getBoundingClientRect();
-    const scaleX = box.width / canvas.width;
-    const scaleY = box.height / canvas.height;
-    return {
-      left: box.left + rect.x * scaleX,
-      top: box.top + rect.y * scaleY,
-      width: rect.w * scaleX,
-      height: rect.h * scaleY,
-    };
-  }, []);
-
   const onAdd = useCallback(
-    (rect: Rect) => {
+    (
+      rect: Rect,
+      anchor: { left: number; top: number; width: number; height: number },
+    ) => {
       commit([...rects, rect]);
       setSelectedIndex(rects.length);
-      // New boxes open their editor right away: the first thing a user wants
-      // after drawing is to confirm the style or switch the box off.
-      const anchor = anchorForRect(rect);
-      if (anchor) {
+      // On a mouse the box editor opens right away. On a finger it is a bottom
+      // sheet that would cover the image after every rectangle — accidental ones
+      // included — so there it stays a deliberate tap on the box.
+      if (!isCoarsePointer) {
         activeBox.openNewest(rects.length, anchor);
       }
     },
-    [activeBox, anchorForRect, commit, rects],
+    [activeBox, commit, isCoarsePointer, rects],
   );
 
   const { canvasRef, handlers } = useCanvasEditor({
@@ -131,10 +116,6 @@ export default function Redactor() {
     onPick: activeBox.open,
     interactive,
     lines: detectLines,
-  });
-
-  useEffect(() => {
-    canvasElementRef.current = canvasRef.current;
   });
 
   // Style and skip changes must reach the type-filter pool too, otherwise
@@ -316,9 +297,6 @@ export default function Redactor() {
       enabledTypes={detectTypes.enabled}
       onToggleType={detectTypes.toggle}
       packs={ocrPacks}
-      showModeSwitch={isCoarsePointer}
-      canvasMode={canvasMode}
-      onCanvasModeChange={setCanvasMode}
     />
   );
 
@@ -347,6 +325,9 @@ export default function Redactor() {
                 onToggleExpanded={() => setStageExpanded((open) => !open)}
                 fit={fit}
                 onFitChange={setFit}
+                showModeSwitch={isCoarsePointer}
+                canvasMode={canvasMode}
+                onCanvasModeChange={setCanvasMode}
               />
             </div>
 

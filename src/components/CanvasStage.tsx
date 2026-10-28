@@ -3,6 +3,7 @@
 import type { DragEvent, RefObject } from "react";
 
 import { IconClose } from "@/components/Icons";
+import type { CanvasMode } from "@/hooks/useCanvasMode";
 import { PRIVACY_NOTE } from "@/components/privacy-note";
 import type { LoadedImage } from "@/hooks/useImageLoader";
 
@@ -19,6 +20,15 @@ type Props = {
   };
   interactive: boolean;
   dragging: boolean;
+  /**
+   * Draw / Scroll, shown only where a finger can pick one up. It belongs with the
+   * canvas rather than in the tool drawer: which gesture the image answers is a
+   * property of the stage, and a control hidden inside a panel that covers half
+   * the image is not a way out of a captured swipe.
+   */
+  showModeSwitch: boolean;
+  canvasMode: CanvasMode;
+  onCanvasModeChange: (mode: CanvasMode) => void;
   dragProps: {
     onDragOver: (event: DragEvent<HTMLElement>) => void;
     onDragLeave: (event: DragEvent<HTMLElement>) => void;
@@ -30,6 +40,66 @@ type Props = {
   fit: FitMode;
   onFitChange: (fit: FitMode) => void;
 };
+
+const MODE_OPTIONS: { value: CanvasMode; label: string; hint: string }[] = [
+  {
+    value: "draw",
+    label: "Draw",
+    hint: "A drag draws a box; after a scan, tap a line to cover it. The page will not scroll from the image.",
+  },
+  {
+    value: "scroll",
+    label: "Scroll",
+    hint: "The page scrolls and zooms normally. Switch to Draw to mark boxes.",
+  },
+];
+
+/**
+ * The gesture-mode switch, sized for a thumb and shown wherever a finger is the
+ * pointer. Keyed to the pointer rather than the viewport width: a tablet is both
+ * wide and touch-first, and a switch hidden at `lg` would leave it stuck in
+ * Scroll with no way back to Draw.
+ *
+ * The active state is the one thing a user has to be able to read at a glance on
+ * a phone: if it says Draw, a swipe will paint a rectangle instead of panning,
+ * and that is the difference between working and thinking the page is broken.
+ */
+function ModeSwitch({
+  mode,
+  onChange,
+}: {
+  mode: CanvasMode;
+  onChange: (mode: CanvasMode) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 border-b border-line bg-surface px-4 py-2">
+      <div
+        role="group"
+        aria-label="Finger gesture on the image"
+        className="flex gap-1 rounded-md bg-surface-2 p-1"
+      >
+        {MODE_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={mode === option.value}
+            className={`min-h-11 flex-1 rounded-md text-body-sm font-semibold transition-state ${
+              mode === option.value
+                ? "bg-paper text-ink shadow-card"
+                : "text-ink-2 hover:text-ink"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-label leading-snug text-ink-3">
+        {MODE_OPTIONS.find((option) => option.value === mode)?.hint}
+      </p>
+    </div>
+  );
+}
 
 function FitToggle({
   fit,
@@ -80,6 +150,9 @@ export default function CanvasStage({
   handlers,
   interactive,
   dragging,
+  showModeSwitch,
+  canvasMode,
+  onCanvasModeChange,
   dragProps,
   expanded,
   onToggleExpanded,
@@ -127,17 +200,21 @@ export default function CanvasStage({
         </button>
       </div>
 
+      {showModeSwitch ? (
+        <ModeSwitch mode={canvasMode} onChange={onCanvasModeChange} />
+      ) : null}
+
       {expanded ? (
         <p className="border-b border-line bg-surface px-4 py-2 text-label leading-snug text-ink-2 lg:hidden">
           {PRIVACY_NOTE}
         </p>
       ) : null}
 
-      <p className="hidden px-1 pb-1 text-label text-ink-3 lg:block">
-        {interactive
-          ? "Drag on the image to draw a box."
-          : "Scroll mode: the image does not respond to drags."}
-      </p>
+      {showModeSwitch ? null : (
+        <p className="px-1 pb-1 text-label text-ink-3">
+          Drag on the image to draw a box. Tap a line to cover it after a scan.
+        </p>
+      )}
 
       <div
         {...dragProps}

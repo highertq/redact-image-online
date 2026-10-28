@@ -22,17 +22,6 @@ const STYLE_OPTIONS: { value: FillStyle; label: string }[] = [
   { value: "pixelate", label: "Pixelate" },
 ];
 
-export type CanvasMode = "draw" | "scroll";
-
-const MODE_OPTIONS: { value: CanvasMode; label: string; hint: string }[] = [
-  { value: "draw", label: "Draw", hint: "Drag on the image to draw boxes." },
-  {
-    value: "scroll",
-    label: "Scroll",
-    hint: "The page scrolls normally. Switch to Draw to add boxes.",
-  },
-];
-
 
 type ToolbarProps = {
   fillStyle: FillStyle;
@@ -59,9 +48,6 @@ type ToolbarProps = {
   enabledTypes: readonly string[];
   onToggleType: (type: string) => void;
   packs: OcrPacksState;
-  showModeSwitch: boolean;
-  canvasMode: CanvasMode;
-  onCanvasModeChange: (mode: CanvasMode) => void;
 };
 
 const ghostButton =
@@ -108,9 +94,6 @@ export default function EditorToolbar({
   enabledTypes,
   onToggleType,
   packs,
-  showModeSwitch,
-  canvasMode,
-  onCanvasModeChange,
 }: ToolbarProps) {
   return (
     <div className="flex flex-col gap-5">
@@ -313,31 +296,6 @@ export default function EditorToolbar({
         </div>
       </div>
 
-      {showModeSwitch ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-label font-semibold tracking-wide text-ink-3 uppercase">
-            Canvas mode
-          </legend>
-          <div className="grid grid-cols-2 gap-1 rounded-md bg-surface-2 p-1">
-            {MODE_OPTIONS.map((option) => (
-              <label key={option.value} className={segmentClass(canvasMode === option.value)}>
-                <input
-                  type="radio"
-                  name="canvas-mode"
-                  value={option.value}
-                  checked={canvasMode === option.value}
-                  onChange={() => onCanvasModeChange(option.value)}
-                  className="sr-only"
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-          <p className="text-label leading-relaxed text-ink-3">
-            {MODE_OPTIONS.find((option) => option.value === canvasMode)?.hint}
-          </p>
-        </fieldset>
-      ) : null}
 
       <div className="hidden flex-col gap-2 lg:flex">
         <button
