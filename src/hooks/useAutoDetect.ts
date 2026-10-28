@@ -7,10 +7,13 @@ import type { Rect } from "@/lib/geometry";
 import {
   OcrLoadError,
   recognizeWords,
+  type OcrLangsMode,
   type OcrProgress,
+  type OcrSource,
   type OcrStage,
 } from "@/lib/ocr";
 import { wordsToBoxes, type PiiBox } from "@/lib/pii-boxes";
+import { groupLines, type TextLine } from "@/lib/text-lines";
 
 export type DetectMessage =
   | { kind: "success"; text: string }
@@ -24,7 +27,17 @@ export type DetectState = {
   message: DetectMessage | null;
   /** True once the user has launched at least one pass. */
   hasRun: boolean;
-  run: (canvas: HTMLCanvasElement | null, existing: readonly Rect[]) => Promise<Rect[]>;
+  /**
+   * Recognised lines from the latest pass, in image pixels. Tap-to-redact reads
+   * these, which is why a detection pass is worth running even when it finds no
+   * sensitive pattern: it hands the canvas a map of the text.
+   */
+  lines: TextLine[];
+  run: (
+    source: OcrSource | null,
+    existing: readonly Rect[],
+    langs: OcrLangsMode,
+  ) => Promise<Rect[]>;
   clear: () => void;
 };
 
@@ -36,7 +49,8 @@ const RECOGNIZE_ERROR = "Text recognition failed. Try again.";
 
 /**
  * Drives the OCR pass and owns every piece of feedback around it: the current
- * stage, a monotonic percentage, the outcome message, and the error flavour.
+ * stage, a monotonic percentage, the outcome message, the error flavour, and the
+ * line map the canvas uses for tap-to-redact.
  *
  * Boxes come back as ordinary rects carrying a `label` and `auto` flag so the
  * editor can style them and the user can still delete them.
@@ -47,16 +61,26 @@ export default function useAutoDetect(): DetectState {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<DetectMessage | null>(null);
   const [hasRun, setHasRun] = useState(false);
+  const [lines, setLines] = useState<TextLine[]>([]);
 
   // tesseract reports progress per phase and it resets to 0 between them. The
   // history high-water mark keeps the bar from jumping backwards.
   const highestRef = useRef(0);
 
-  const clear = useCallback(() => setMessage(null), []);
+  const clear = useCallback(() => {
+    setMessage(null);
+    // A new image invalidates the old line map; leaving it in place would let a
+    // tap on the new picture cover text the engine never read.
+    setLines([]);
+  }, []);
 
   const run = useCallback(
-    async (canvas: HTMLCanvasElement | null, existing: readonly Rect[]) => {
-      if (!canvas) {
+    async (
+      source: OcrSource | null,
+      existing: readonly Rect[],
+      langs: OcrLangsMode,
+    ) => {
+      if (!source) {
         return [];
       }
 
@@ -80,7 +104,10 @@ export default function useAutoDetect(): DetectState {
       };
 
       try {
-        const words = await recognizeWords(canvas, onProgress);
+        const words = await recognizeWords(source, langs, onProgress);
+        const recognised = groupLines(words);
+        setLines(recognised);
+
         const boxes: PiiBox[] = wordsToBoxes(words);
         const rects: Rect[] = boxes.map((box) => ({
           x: box.x,
@@ -105,7 +132,7 @@ export default function useAutoDetect(): DetectState {
             kind: "success",
             text:
               rects.length === 0
-                ? `Read ${words.length} ${words.length === 1 ? "word" : "words"} but found no sensitive patterns. ${REVIEW_NOTE}`
+                ? `Read ${words.length} ${words.length === 1 ? "word" : "words"} in ${recognised.length} ${recognised.length === 1 ? "line" : "lines"} but found nothing sensitive. Tap any text on the image to cover it. ${REVIEW_NOTE}`
                 : "No new items found.",
           });
         } else {
@@ -135,5 +162,5 @@ export default function useAutoDetect(): DetectState {
     [],
   );
 
-  return { running, stage, progress, message, hasRun, run, clear };
+  return { running, stage, progress, message, hasRun, lines, run, clear };
 }

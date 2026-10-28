@@ -81,8 +81,8 @@ export const INVOICE: Scenario = {
       "Social Security numbers in the separated form, on contractor invoices that should not be printing one",
     ],
     misses: [
-      "Bank account and routing numbers. These are not one of the six matched patterns, so the most important field on the page always needs a box drawn by hand.",
-      "IBAN and SWIFT codes, for the same reason.",
+      "Bank account and routing numbers. No pattern recognises these formats, so they are covered only when the line carries a label such as \"Account\" — verify the most important field on the page by hand.",
+      "IBAN and SWIFT codes printed without one of those words in front of them.",
       "Tax identification numbers. The format varies by country and is not recognized.",
       "Client names, addresses, and line-item descriptions.",
       "Invoice numbers, which are alphanumeric and not a matched pattern.",
@@ -143,7 +143,7 @@ export const INVOICE: Scenario = {
     {
       question: "Does detection find the IBAN or the account number?",
       answer:
-        "No. Account, routing, IBAN, and SWIFT formats are not among the six matched patterns. Draw those boxes by hand every time.",
+        "Partly. The account, routing, IBAN, and SWIFT formats are not patterns the matcher knows, but a line that carries the word Account, IBAN, or SWIFT is caught by the label rule. Anything printed without such a word in front of it needs a box drawn by hand.",
     },
     {
       question: "Will the exported file still carry the invoice's metadata?",
@@ -320,7 +320,7 @@ export const CONTRACT: Scenario = {
     {
       question: "Does the tool detect party names automatically?",
       answer:
-        "No. Detection matches six fixed text patterns. Names, addresses, signatures, and entity names always need a box drawn by hand.",
+        "Only when the line is labelled. Detection has eight text patterns plus a rule that covers the value sitting after a field name, so \"Buyer: Acme Ltd\" is caught and a company name in the middle of a sentence is not. Signatures and entity names in running text always need a box drawn by hand.",
     },
     {
       question: "What happens to the file after I download it?",
@@ -420,7 +420,7 @@ export const MEDICAL_RECORD: Scenario = {
     ],
     misses: [
       "Patient names. There is no named-entity recognition, so the single most important identifier is never found automatically.",
-      "Medical record numbers and account numbers. Not among the six matched patterns.",
+      "Medical record numbers and account numbers. Neither format is a matched pattern; a line that says MRN or Account is caught by the label rule.",
       "Dates of birth and dates of service.",
       "Insurance member and group IDs.",
       "Provider names, facility names, and addresses.",
@@ -487,7 +487,7 @@ export const MEDICAL_RECORD: Scenario = {
     {
       question: "Does the tool find patient names automatically?",
       answer:
-        "No. Detection matches six fixed text patterns and has no name recognition. On a medical record, assume every identifier needs a box drawn by hand.",
+        "No, unless the field names it. There is no named-entity recognition: \"Patient: Zhang Wei\" is covered because the word Patient labels it, the same name in a letterhead or a sentence is not. On a medical record, assume every identifier that is not labelled needs a box drawn by hand.",
     },
     {
       question: "Is the image uploaded anywhere?",

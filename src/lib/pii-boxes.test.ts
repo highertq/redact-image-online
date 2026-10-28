@@ -61,7 +61,11 @@ describe("wordsToBoxes", () => {
     expect(boxes[0].h).toBe(28);
   });
 
-  it("emits one box per line when a match spans two lines", () => {
+  it("does not fuse a digit run across two lines", () => {
+    // Rules are line-local. A page-wide string would read "4111" at the end of
+    // one row plus "1111 1111 1111" at the start of the next as a single
+    // 19-digit card number, which is how two unrelated figures on a statement
+    // get merged into a match that exists nowhere in the image.
     const words = [
       word("card", 0, 0, 40, 20, 0),
       word("4111", 50, 0, 90, 20, 0),
@@ -70,22 +74,86 @@ describe("wordsToBoxes", () => {
       word("1111", 100, 30, 140, 50, 1),
     ];
     const boxes = wordsToBoxes(words);
-    expect(boxes).toHaveLength(2);
-    expect(types(boxes)).toEqual(["credit_card", "credit_card"]);
+    expect(types(boxes)).toEqual(["labelled"]);
     expect(boxes[0]).toEqual({
-      type: "credit_card",
+      type: "labelled",
       x: 46,
       y: -4,
       w: 48,
       h: 28,
     });
-    expect(boxes[1]).toEqual({
-      type: "credit_card",
-      x: -4,
-      y: 26,
-      w: 148,
-      h: 28,
-    });
+  });
+
+  it("boxes a full card number that lives on one line", () => {
+    const words = [
+      word("4111", 0, 0, 40, 20, 0),
+      word("1111", 50, 0, 90, 20, 0),
+      word("1111", 100, 0, 140, 20, 0),
+      word("1111", 150, 0, 190, 20, 0),
+    ];
+    const boxes = wordsToBoxes(words);
+    expect(types(boxes)).toEqual(["credit_card"]);
+    expect(boxes[0].x).toBe(-4);
+    expect(boxes[0].w).toBe(198);
+  });
+
+  it("covers a labelled value whose pattern is not recognised", () => {
+    // "交易单号" is not any document number the pattern list knows. The label is
+    // what tells us the value next to it is worth hiding.
+    const words = [
+      word("交易单号", 0, 0, 80, 20, 0),
+      word("QJ2026A00388", 90, 0, 220, 20, 0),
+    ];
+    const boxes = wordsToBoxes(words);
+    expect(types(boxes)).toEqual(["labelled"]);
+    // The label itself stays visible: only the value is covered.
+    expect(boxes[0].x).toBe(86);
+  });
+
+  it("keeps a pattern box that sticks out of the label box", () => {
+    const words = [
+      word("total", 0, 0, 50, 20, 0),
+      word("4100001234567890", 60, 0, 220, 20, 0),
+      word("10.0.0.1", 230, 40, 300, 60, 1),
+    ];
+    const boxes = wordsToBoxes(words);
+    expect(types(boxes)).toEqual(["labelled", "ipv4"]);
+  });
+
+  it("boxes a Chinese label split into single characters by the engine", () => {
+    // tesseract emits 证件号 as three words. Without CJK compaction neither the
+    // label rule nor the ID number is reachable, and the bill looks "clean".
+    const words = [
+      word("证", 0, 0, 20, 20, 0),
+      word("件", 25, 0, 45, 20, 0),
+      word("号", 50, 0, 70, 20, 0),
+      word("330281199807154323", 80, 0, 260, 20, 0),
+    ];
+    const boxes = wordsToBoxes(words);
+    expect(types(boxes)).toEqual(["labelled"]);
+    expect(boxes[0].x).toBe(76);
+    expect(boxes[0].x + boxes[0].w).toBe(264);
+  });
+
+  it("boxes a labelled value the patterns cannot see, such as a masked PAN", () => {
+    const words = [
+      word("Card", 0, 0, 40, 20, 0),
+      word("No.", 50, 0, 80, 20, 0),
+      word("****1234", 90, 0, 170, 20, 0),
+    ];
+    const boxes = wordsToBoxes(words);
+    expect(types(boxes)).toEqual(["labelled"]);
+    expect(boxes[0].x).toBe(86);
+  });
+
+  it("reports a Chinese mobile number and resident ID by type", () => {
+    const words = [
+      word("13800138000", 0, 0, 110, 20, 0),
+      // A checksum-valid 330281 (Yuyao) ID, born 1998-07-15.
+      word("330281199807154323", 120, 0, 260, 20, 0),
+    ];
+    const boxes = wordsToBoxes(words);
+    expect(types(boxes).sort()).toEqual(["cn_id", "cn_phone"]);
   });
 
   it("keeps separate matches in separate boxes", () => {

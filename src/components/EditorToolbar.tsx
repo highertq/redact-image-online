@@ -10,7 +10,7 @@ import {
   IconUndo,
 } from "@/components/Icons";
 import type { DetectMessage } from "@/hooks/useAutoDetect";
-import type { OcrStage } from "@/lib/ocr";
+import type { OcrLangsMode, OcrStage } from "@/lib/ocr";
 import type { TypeChip } from "@/lib/detect-types";
 import type { FillStyle } from "@/lib/image";
 
@@ -28,6 +28,29 @@ const MODE_OPTIONS: { value: CanvasMode; label: string; hint: string }[] = [
     value: "scroll",
     label: "Scroll",
     hint: "The page scrolls normally. Switch to Draw to add boxes.",
+  },
+];
+
+/**
+ * Recognition languages. "Chinese + English" is the default: the extra 1.7 MB is
+ * paid once and cached, while an unrecognised script costs the user a bill they
+ * thought was redacted.
+ */
+const LANG_OPTIONS: { value: OcrLangsMode; label: string; hint: string }[] = [
+  {
+    value: "both",
+    label: "EN + 中文",
+    hint: "Reads English and Simplified Chinese text. Downloads both models on first use.",
+  },
+  {
+    value: "en",
+    label: "English",
+    hint: "English only, which downloads less data and runs faster.",
+  },
+  {
+    value: "zh",
+    label: "中文",
+    hint: "Simplified Chinese only. Latin digits and addresses are still read.",
   },
 ];
 
@@ -55,6 +78,8 @@ type ToolbarProps = {
   typeChips: TypeChip[];
   enabledTypes: readonly string[];
   onToggleType: (type: string) => void;
+  langs: OcrLangsMode;
+  onLangsChange: (langs: OcrLangsMode) => void;
   showModeSwitch: boolean;
   canvasMode: CanvasMode;
   onCanvasModeChange: (mode: CanvasMode) => void;
@@ -103,6 +128,8 @@ export default function EditorToolbar({
   typeChips,
   enabledTypes,
   onToggleType,
+  langs,
+  onLangsChange,
   showModeSwitch,
   canvasMode,
   onCanvasModeChange,
@@ -158,6 +185,36 @@ export default function EditorToolbar({
           enabled={enabledTypes}
           onToggle={onToggleType}
         />
+        <p className="text-label leading-relaxed text-ink-3">
+          After a scan, tap any text on the image to cover that line — useful for
+          anything the patterns miss.
+        </p>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-label font-semibold tracking-wide text-ink-3 uppercase">
+            Recognition language
+          </legend>
+          <div className="grid grid-cols-3 gap-1 rounded-md bg-surface-2 p-1">
+            {LANG_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={segmentClass(langs === option.value)}
+              >
+                <input
+                  type="radio"
+                  name="ocr-langs"
+                  value={option.value}
+                  checked={langs === option.value}
+                  onChange={() => onLangsChange(option.value)}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          <p className="text-label leading-relaxed text-ink-3">
+            {LANG_OPTIONS.find((option) => option.value === langs)?.hint}
+          </p>
+        </fieldset>
       </div>
 
       <div className="h-px bg-line" />

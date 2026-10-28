@@ -224,7 +224,7 @@ export const CARD_NUMBER: Scenario = {
     misses: [
       "Numbers that fail the Luhn check because a digit is obscured, mistyped, or cut off by the edge of the screenshot.",
       "Numbers where the grouping is broken by other characters, such as a slash or a label inserted mid-string.",
-      "Expiry dates and CVVs. These are not matched as separate patterns at all, so they always need a box drawn by hand.",
+      "Expiry dates, which are not a matched pattern at all. A CVV or PIN is covered only on a line that names it; an expiry date always needs a box drawn by hand.",
       "Cardholder names and billing addresses, which are not detected in this version.",
       "A physical card photographed at an angle, where the embossed digits produce uneven contrast.",
     ],

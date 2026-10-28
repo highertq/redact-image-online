@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "ocr-assets": "node scripts/copy-ocr-assets.mjs",
+    "predev": "npm run ocr-assets",
     "dev": "next dev",
+    "prebuild": "npm run ocr-assets",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -17,12 +20,15 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@tesseract.js-data/chi_sim": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "tailwindcss": "^4",
+    "tesseract.js-core": "^7.0.0",
     "typescript": "^5",
     "vitest": "^5.0.5"
   }

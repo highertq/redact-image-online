@@ -20,6 +20,7 @@ import useFileDrop from "@/hooks/useFileDrop";
 import useImageLoader from "@/hooks/useImageLoader";
 import useIsCoarsePointer from "@/hooks/useIsCoarsePointer";
 import useDetectTypes from "@/hooks/useDetectTypes";
+import useOcrLangs from "@/hooks/useOcrLangs";
 import useRectHistory from "@/hooks/useRectHistory";
 import type { FillStyle } from "@/lib/image";
 import type { Rect } from "@/lib/geometry";
@@ -41,6 +42,7 @@ export default function Redactor() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isCoarsePointer = useIsCoarsePointer();
+  const ocrLangs = useOcrLangs();
   // Non-touch devices never see the switch, so their canvas stays interactive
   // regardless of the stored mode.
   const interactive = !isCoarsePointer || canvasMode === "draw";
@@ -51,6 +53,7 @@ export default function Redactor() {
     progress: detectProgress,
     message: detectMessage,
     hasRun: detectHasRun,
+    lines: detectLines,
     run: runDetect,
     clear: clearDetectResult,
   } = useAutoDetect();
@@ -127,6 +130,7 @@ export default function Redactor() {
     onSelect: setSelectedIndex,
     onPick: activeBox.open,
     interactive,
+    lines: detectLines,
   });
 
   useEffect(() => {
@@ -192,9 +196,10 @@ export default function Redactor() {
   }, [openFile]);
 
   const runAutoDetect = useCallback(async () => {
-    // Existing boxes are handed in so duplicates can be filtered before they
-    // ever reach the canvas. The hook returns only the boxes that survived.
-    const found = await runDetect(canvasRef.current, rects);
+    // Recognition reads the decoded original, not the on-screen canvas, so the
+    // tool's own overlay can never be mistaken for document text. Existing boxes
+    // are handed in so duplicates can be filtered before they reach the canvas.
+    const found = await runDetect(image, rects, ocrLangs.mode);
     if (found.length === 0) {
       return;
     }
@@ -204,7 +209,7 @@ export default function Redactor() {
     // Auto boxes join the same history stack, so undo removes them in one step.
     commit([...rects, ...found]);
     setSelectedIndex(-1);
-  }, [canvasRef, commit, detectTypes, rects, runDetect]);
+  }, [commit, detectTypes, image, ocrLangs.mode, rects, runDetect]);
 
   const removeSelected = useCallback(() => {
     if (selectedIndex < 0) {
@@ -310,6 +315,8 @@ export default function Redactor() {
       typeChips={detectTypes.chips}
       enabledTypes={detectTypes.enabled}
       onToggleType={detectTypes.toggle}
+      langs={ocrLangs.mode}
+      onLangsChange={ocrLangs.setMode}
       showModeSwitch={isCoarsePointer}
       canvasMode={canvasMode}
       onCanvasModeChange={setCanvasMode}

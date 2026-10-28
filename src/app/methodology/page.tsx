@@ -12,7 +12,7 @@ const PATH = "/methodology";
 export const metadata: Metadata = contentMetadata({
   title: "How Detection Works",
   description:
-    "The exact rules behind auto-detect: six pattern types, a Luhn checksum for card numbers, priority-based overlap resolution, and the known cases that get missed.",
+    "The exact rules behind auto-detect: eight pattern types with checksums, label rules for fields no pattern knows, priority-based overlap resolution, and the known cases that get missed.",
   path: PATH,
 });
 
@@ -28,14 +28,24 @@ const RULES = [
     note: "Separated forms only. A bare ten-digit run is not matched.",
   },
   {
+    type: "China mobile",
+    rule: "1[3-9] plus nine digits, with +86 or in 3-4-4 groups",
+    note: "Exactly eleven digits, and never inside a longer digit run.",
+  },
+  {
     type: "SSN",
     rule: "123-45-6789 or 123 45 6789",
     note: "A bare nine-digit run is deliberately not treated as an SSN.",
   },
   {
+    type: "China ID card",
+    rule: "18 digits with a birth date and checksum, or the 15-digit legacy form",
+    note: "Both the date and the checksum must validate, so order numbers do not match.",
+  },
+  {
     type: "Card number",
     rule: "13 to 19 digits, single spaces or dashes allowed",
-    note: "Must additionally pass the Luhn checksum.",
+    note: "Must additionally pass the Luhn checksum. Covers UnionPay PANs.",
   },
   {
     type: "IPv4",
@@ -44,8 +54,14 @@ const RULES = [
   },
   {
     type: "API key",
-    rule: "sk- prefix, AKIA prefix, or ghp_ prefix",
+    rule: "sk-, AKIA, ghp_, AIza, or sk_live / pk_live prefixes",
     note: "Narrowest match. Other key formats are not recognized.",
+  },
+  {
+    type: "Labelled field",
+    rule:
+      "Phone, Email, Card, Account, Order, Total, Name, Address, or 手机号, 身份证, 银行卡, 订单号, 收款方, 金额 followed by a value",
+    note: "Covers the value, not the label. This is the rule that works on documents the patterns were never written for.",
   },
 ];
 
@@ -54,13 +70,16 @@ const PRIORITY = [
   "Email",
   "Card number",
   "SSN",
+  "China ID card",
   "US phone",
+  "China mobile",
   "IPv4",
 ];
 
 const CHECKS = [
   "Compare the reported count against what you can see yourself. If the tool found fewer addresses than are visible on screen, the result is incomplete.",
   "Use the type filter to isolate one category at a time. Turning a category off is faster than re-reading every box.",
+  "Tap any text the patterns missed. Once a pass has run, a tap covers the whole line under your finger, which is faster than dragging a box and works in any language.",
   "Review the exported file, not the editor. Zoom to actual size and check each box edge for a sliver of a character.",
   "Assume a miss until you have checked. Detection is a time saver, not a verification step.",
 ];
@@ -93,9 +112,9 @@ export default function MethodologyPage() {
         <PageHeader kicker="Methodology" title="How auto-detect decides what to flag">
           <p>
             {SITE_NAME} does two separate things: it reads text out of the
-            image, then it matches that text against six rules. Both steps can
-            be wrong, and knowing which step failed is the difference between
-            trusting a result and checking it.
+            image, then it matches that text against a fixed set of rules. Both
+            steps can be wrong, and knowing which step failed is the difference
+            between trusting a result and checking it.
           </p>
         </PageHeader>
 
@@ -109,6 +128,13 @@ export default function MethodologyPage() {
               the browser during this step.
             </p>
             <p>
+              The recognition models are served from this site, not from a third
+              party CDN, and the engine can read English and Simplified Chinese.
+              A Chinese payment receipt and an English bank statement are both
+              in scope; a document in another script is read only where its
+              digits and Latin words resemble these.
+            </p>
+            <p>
               This step is the weak link, and it fails in predictable ways:
               small fonts, low contrast, unusual typefaces, text over a busy
               background, handwriting, and anything rotated or curved. On a
@@ -119,11 +145,15 @@ export default function MethodologyPage() {
         </Section>
 
         <Section>
-          <H2>Step two: match the six rules</H2>
+          <H2>Step two: match the rules</H2>
           <Prose>
             <p>
-              Recognized words are rejoined into lines, then scanned for these
-              patterns. There are exactly six, and there are no others.
+              Recognized words are rejoined into lines, then scanned line by
+              line. Eight pattern rules and one label rule are implemented, and
+              there are no others. Matching per line rather than over the whole
+              page is deliberate: a number at the end of one row must not fuse
+              with digits at the start of the next and invent a card number that
+              exists nowhere in the image.
             </p>
           </Prose>
           <DataTable head={["Type", "Rule", "Limit"]}>
@@ -143,10 +173,12 @@ export default function MethodologyPage() {
           </DataTable>
           <Prose>
             <p>
-              Names, addresses, license plates, faces, usernames, workspace
-              names, and job titles are not in this list. They are not detected
-              at all in this version, and any page on this site that implies
-              otherwise would be wrong.
+              Faces, license plates, handwriting, and logos are not in this
+              list. A name or an address is covered only when a label sits in
+              front of it — &quot;Name: Zhang Wei&quot; or &quot;收款方 张伟&quot;
+              matches the label rule, while the same name printed in the middle
+              of a sentence does not match anything. Any page on this site that
+              implies otherwise would be wrong.
             </p>
           </Prose>
         </Section>

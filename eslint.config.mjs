@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated at build time from node_modules by scripts/copy-ocr-assets.mjs:
+    // vendored WASM and worker bundles, never source we lint.
+    "public/ocr/**",
   ]),
 ]);
 

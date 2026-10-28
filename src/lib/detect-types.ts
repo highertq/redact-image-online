@@ -7,8 +7,11 @@ import type { Rect } from "@/lib/geometry";
 export const TYPE_LABELS: Record<string, string> = {
   email: "Email",
   us_phone: "Phone",
+  cn_phone: "Phone (CN)",
   ssn: "SSN",
+  cn_id: "ID card (CN)",
   credit_card: "Card number",
+  labelled: "Labelled field",
   api_key: "API key",
   ipv4: "IP address",
 };
@@ -17,8 +20,11 @@ export const TYPE_LABELS: Record<string, string> = {
 export const TYPE_ORDER = [
   "email",
   "us_phone",
+  "cn_phone",
   "ssn",
+  "cn_id",
   "credit_card",
+  "labelled",
   "api_key",
   "ipv4",
 ];

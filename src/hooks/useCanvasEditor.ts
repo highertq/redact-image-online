@@ -3,9 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { clampRect, hitTest, normalizeRect, type Rect } from "@/lib/geometry";
+import { lineAtPoint, uncoveredBox, wordInRect, type TextLine } from "@/lib/text-lines";
 import type { LoadedImage } from "@/hooks/useImageLoader";
 
 const MIN_DRAG_PX = 8;
+/**
+ * A pointer that barely moved is a tap, not a drag. Measured in CSS pixels
+ * because that is what a finger actually travels: on a phone showing a 1170 px
+ * screenshot at 390 px wide, a 6 px thumb jitter is 18 image pixels.
+ */
+const TAP_CSS_PX = 6;
 const OUTLINE = "rgba(239, 68, 68, 0.9)";
 const OUTLINE_SELECTED = "rgba(59, 130, 246, 1)";
 const GHOST_FILL = "rgba(239, 68, 68, 0.2)";
@@ -32,6 +39,12 @@ type Options = {
    * gestures, so the page scrolls normally. Used by the mobile Scroll mode.
    */
   interactive?: boolean;
+  /**
+   * Recognised text lines, from the latest detection pass. When present, a tap
+   * covers the line it landed on — the fast path on a phone, where dragging a
+   * box exactly around a line of text is fiddly and a tap is not.
+   */
+  lines?: TextLine[];
 };
 
 export type CanvasEditor = {
@@ -56,10 +69,15 @@ export default function useCanvasEditor({
   onAdd,
   onSelect,
   interactive = true,
+  lines = [],
   onPick,
 }: Options): CanvasEditor {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
+  // The same anchor in CSS pixels, kept so a tap can be recognised by how far
+  // the finger travelled on screen rather than by how far it travelled in a
+  // 12-megapixel image.
+  const startClientRef = useRef<{ x: number; y: number } | null>(null);
   const [ghost, setGhost] = useState<Rect | null>(null);
 
   // Dropping out of draw mode must discard the drag anchor, otherwise a later
@@ -69,6 +87,7 @@ export default function useCanvasEditor({
   useEffect(() => {
     if (!interactive) {
       startRef.current = null;
+      startClientRef.current = null;
     }
   }, [interactive]);
 
@@ -202,6 +221,7 @@ export default function useCanvasEditor({
       onPick?.(-1, { left: 0, top: 0, width: 0, height: 0 });
       event.currentTarget.setPointerCapture(event.pointerId);
       startRef.current = point;
+      startClientRef.current = { x: event.clientX, y: event.clientY };
       setGhost({ x: point.x, y: point.y, w: 0, h: 0 });
     },
     [image, interactive, onPick, onSelect, rects, toImagePoint, toViewportRect],
@@ -228,15 +248,40 @@ export default function useCanvasEditor({
   const onPointerUp = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
       const start = startRef.current;
+      const startClient = startClientRef.current;
       startRef.current = null;
+      startClientRef.current = null;
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
       setGhost(null);
-      if (!start || !image || !interactive) {
+      if (!start || !startClient || !image || !interactive) {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
+
+      // A tap covers the text line under the finger. It has to be tested before
+      // the drag-length rule below, because a tap is precisely a drag too short
+      // to make a box — without this branch it would just do nothing.
+      const moved = Math.hypot(
+        event.clientX - startClient.x,
+        event.clientY - startClient.y,
+      );
+      if (moved < TAP_CSS_PX && lines.length > 0) {
+        const line = lineAtPoint(lines, point.x, point.y);
+        if (line) {
+          const box = uncoveredBox(line, (word) =>
+            rects.some((rect) => wordInRect(word, rect)),
+          );
+          // null means every word on that line is already covered: tapping a
+          // black bar must not stack a second box on it.
+          if (box) {
+            onAdd(clampRect(box, image.width, image.height));
+          }
+          return;
+        }
+      }
+
       const final = clampRect(
         normalizeRect(start.x, start.y, point.x, point.y),
         image.width,
@@ -247,7 +292,7 @@ export default function useCanvasEditor({
       }
       onAdd(final);
     },
-    [image, interactive, onAdd, toImagePoint],
+    [image, interactive, lines, onAdd, rects, toImagePoint],
   );
 
   return {

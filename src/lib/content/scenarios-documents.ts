@@ -72,7 +72,7 @@ export const SCREENSHOT: Scenario = {
   auto: {
     heading: "What detection covers, and where it stops",
     intro:
-      "Detection reads text in the image and matches six pattern types. For a screenshot this is a real time saver, because screenshots are exactly the crisp-text case that recognition handles well.",
+      "Detection reads text in the image and matches eight pattern types, plus a rule that covers the value after a field name. For a screenshot this is a real time saver, because screenshots are exactly the crisp-text case that recognition handles well.",
     detects: [
       "Email addresses",
       "US phone numbers in common separated formats",
@@ -144,7 +144,7 @@ export const SCREENSHOT: Scenario = {
     {
       question: "Does the tool find names automatically?",
       answer:
-        "No. Detection matches six fixed patterns — email, phone, SSN, card number, IPv4, and API keys. Names, usernames, and job titles always need a box drawn by hand.",
+        "Only when a field name stands in front of them. The patterns are email, phone, SSN, card number, IPv4, API keys, and Chinese mobile and ID numbers; a separate rule covers the value after a label such as Name or 姓名. A username in running text, or a job title, still needs a box drawn by hand.",
     },
     {
       question: "What happens to the screenshot after I download it?",
@@ -243,7 +243,7 @@ export const BANK_STATEMENT: Scenario = {
       "Social Security numbers in the separated form, when a statement prints one",
     ],
     misses: [
-      "Account and routing numbers. They are not one of the six matched patterns, so cover them by hand every time.",
+      "Account and routing numbers. The formats are not matched, so they are covered only when the line says Account — otherwise cover them by hand every time.",
       "Merchant names, which are the behavioral disclosure.",
       "Balances and transaction amounts.",
       "Customer numbers and statement identifiers.",
@@ -406,7 +406,7 @@ export const RECEIPT: Scenario = {
       "Masked card digits such as ****1234. Four digits alone do not match the card pattern, and they are exactly what a receipt prints.",
       "The QR code and barcode. These are graphics, not text, and detection does not read them at all.",
       "Store numbers, register IDs, and cashier identifiers.",
-      "Order numbers, which are usually alphanumeric and not one of the matched patterns.",
+      "Order numbers, which are usually alphanumeric and match only when a label such as Order or 订单号 stands in front of them.",
       "Most text on a curved, glossy, thermally printed receipt, where recognition accuracy drops significantly.",
     ],
   },
