@@ -6,6 +6,7 @@ import {
   enableTypes,
   mergeUnique,
   rectKey,
+  TYPE_LABELS,
   toggleType,
   typeLabel,
 } from "@/lib/detect-types";
@@ -191,5 +192,37 @@ describe("applyTypeFilter", () => {
   it("ignores boxes whose type is unknown to the enabled list", () => {
     const odd: Rect = { x: 0, y: 0, w: 5, h: 5, label: "face", auto: true };
     expect(applyTypeFilter([odd], [odd], ["email"])).toEqual([]);
+  });
+});
+
+describe("type labels", () => {
+  // The canvas paints `TYPE_LABELS[rect.label]` above every detected box, so an
+  // entry that falls through to the internal key would print "credit_card" or
+  // "labelled" on the user's screenshot — an implementation detail leaking into
+  // the exported view.
+  it("names every type the rules can produce", () => {
+    const produced = [
+      "email",
+      "us_phone",
+      "cn_phone",
+      "ssn",
+      "cn_id",
+      "credit_card",
+      "iban",
+      "labelled",
+      "api_key",
+      "ipv4",
+    ];
+    for (const type of produced) {
+      expect(TYPE_LABELS[type], `missing label for ${type}`).toBeTypeOf("string");
+      expect(typeLabel(type)).not.toBe(type);
+    }
+  });
+
+  it("never shows an internal snake_case key", () => {
+    for (const [type, label] of Object.entries(TYPE_LABELS)) {
+      expect(label, `label for ${type}`).not.toMatch(/_/);
+      expect(label.length).toBeGreaterThan(2);
+    }
   });
 });

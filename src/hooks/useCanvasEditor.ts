@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { TYPE_LABELS } from "@/lib/detect-types";
 import { clampRect, hitTest, normalizeRect, type Rect } from "@/lib/geometry";
 import { lineAtPoint, uncoveredBox, wordInRect, type TextLine } from "@/lib/text-lines";
 import type { LoadedImage } from "@/hooks/useImageLoader";
@@ -133,15 +134,18 @@ export default function useCanvasEditor({
       ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
       ctx.setLineDash([]);
 
-      if (rect.label) {
+      // The human-readable type name, never the internal key: a tag reading
+      // "credit_card" or "labelled" on someone's screenshot is an implementation
+      // detail leaking into the product.
+      const tag = rect.label ? (TYPE_LABELS[rect.label] ?? rect.label) : null;
+      if (tag) {
         // The label lives in image space, so its font is scaled by 1/scale to
         // stay readable no matter how far the canvas is shrunk on screen.
         const fontSize = 12 / scale;
         const padX = 4 / scale;
         const padY = 3 / scale;
         ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`;
-        const label = rect.label;
-        const textWidth = ctx.measureText(label).width;
+        const textWidth = ctx.measureText(tag).width;
         const boxW = textWidth + padX * 2;
         const boxH = fontSize + padY * 2;
         const labelX = rect.x;
@@ -155,7 +159,7 @@ export default function useCanvasEditor({
         ctx.fillRect(labelX, labelY, boxW, boxH);
         ctx.fillStyle = "#ffffff";
         ctx.textBaseline = "top";
-        ctx.fillText(label, labelX + padX, labelY + padY);
+        ctx.fillText(tag, labelX + padX, labelY + padY);
       }
     }
   }, [ghost, image, interactive, rects, selectedIndex]);
