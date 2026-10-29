@@ -44,13 +44,13 @@ type Props = {
 const MODE_OPTIONS: { value: CanvasMode; label: string; hint: string }[] = [
   {
     value: "draw",
-    label: "Draw",
-    hint: "Drag to draw a box; tap to cover a line or edit a box. While Draw is on, a swipe over the image draws instead of scrolling.",
+    label: "Draw boxes",
+    hint: "Editing is on: drag to draw a box, tap to cover a recognised line. A swipe over the image draws instead of panning, so switch back to Browse to move the picture.",
   },
   {
     value: "scroll",
-    label: "Scroll",
-    hint: "Swipe to read the image. A tap still covers a line after a scan, or opens a box to edit — only drawing by drag needs Draw.",
+    label: "Browse",
+    hint: "Reading the screenshot: swipe and pinch work, and the image itself ignores every tap. Switch to Draw boxes to redact.",
   },
 ];
 
@@ -84,7 +84,7 @@ function ModeSwitch({
             type="button"
             onClick={() => onChange(option.value)}
             aria-pressed={mode === option.value}
-            className={`min-h-11 flex-1 rounded-md text-body-sm font-semibold transition-state ${
+            className={`min-h-11 flex-1 whitespace-nowrap rounded-md text-body-sm font-semibold transition-state ${
               mode === option.value
                 ? "bg-paper text-ink shadow-card"
                 : "text-ink-2 hover:text-ink"
@@ -228,9 +228,11 @@ export default function CanvasStage({
           height={image.height}
           role="img"
           aria-label={`Image being redacted, ${image.width} by ${image.height} pixels`}
-          className={`m-auto block h-auto max-w-none ring-1 ring-line ${
-            fit === "fit" ? "w-full" : ""
-          } ${interactive ? "cursor-crosshair" : "cursor-default"}`}
+          className={`m-auto block h-auto max-w-none ring-1 ${
+            interactive ? "ring-accent" : "ring-line"
+          } ${fit === "fit" ? "w-full" : ""} ${
+            interactive ? "cursor-crosshair" : "cursor-default"
+          }`}
           style={{
             // "100%" is the only way to judge whether a box really covers a
             // character in a 900px-wide screenshot on a 390px screen.

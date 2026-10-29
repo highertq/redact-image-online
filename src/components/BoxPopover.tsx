@@ -44,6 +44,9 @@ export default function BoxPopover({
   onClose,
 }: Props) {
   const panelRef = useRef<HTMLDivElement | null>(null);
+  // True between a pointer/key press that began inside this panel and the click
+  // it produces. See the capture handlers on the panel element.
+  const initiatedHereRef = useRef(false);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(
     null,
   );
@@ -98,6 +101,9 @@ export default function BoxPopover({
       if (panel && event.target instanceof Node && panel.contains(event.target)) {
         return;
       }
+      // A gesture that started on the canvas is not an interaction with this
+      // panel, whatever the browser decides to click once it finishes.
+      initiatedHereRef.current = false;
       onClose();
     };
     window.addEventListener("pointerdown", onPointerDown, true);
@@ -109,9 +115,35 @@ export default function BoxPopover({
   return (
     <div
       ref={panelRef}
+      // Every control in this panel answers a click. On a phone the panel is a
+      // bottom sheet that frequently appears under the finger that summoned it,
+      // and the click the browser synthesizes to finish that canvas tap then
+      // lands on whichever control is now there — measured on "Redact this
+      // area", which silently switched a box off and shipped pixels the user
+      // believed covered. So a click is only honoured when a pointer or key
+      // press began inside the panel first: the phantom click has none, a real
+      // second tap does. Timing tricks (a frame of `pointer-events: none`) were
+      // tried and lost — the synthesized click can arrive after the next frame.
+      onPointerDownCapture={() => {
+        initiatedHereRef.current = true;
+      }}
+      onKeyDownCapture={() => {
+        initiatedHereRef.current = true;
+      }}
+      onClickCapture={(event) => {
+        // No reset here. A click on a <label> is followed by a second, forwarded
+        // click on the control it labels, and clearing the flag after the first
+        // one would block the activation that actually changes the radio. The
+        // flag is cleared by a press that starts outside this panel, which is the
+        // only case that has no legitimate clicks to serve.
+        if (!initiatedHereRef.current) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
+      }}
       role="group"
       aria-label={typeName ? `Edit ${typeName} box` : "Edit hand-drawn box"}
-      className="fixed z-50 w-72 max-w-[calc(100vw-24px)] rounded-lg border border-line bg-paper p-4 shadow-pop max-lg:inset-x-0! max-lg:bottom-[calc(3.75rem+env(safe-area-inset-bottom))]! max-lg:top-auto! max-lg:max-h-[80dvh] max-lg:w-auto! max-lg:max-w-none! max-lg:overflow-y-auto max-lg:rounded-b-none max-lg:border-x-0 max-lg:border-b-0 max-lg:pb-safe-2"
+      className="fixed z-50 w-72 max-w-[calc(100vw-24px)] rounded-lg border border-line bg-paper p-4 shadow-pop max-lg:inset-x-0! max-lg:bottom-[calc(3.75rem+env(safe-area-inset-bottom))]! max-lg:top-auto! max-lg:max-h-[45dvh] max-lg:w-auto! max-lg:max-w-none! max-lg:overflow-y-auto max-lg:rounded-b-none max-lg:border-x-0 max-lg:border-b-0 max-lg:p-3 max-lg:pb-safe-2"
       style={
         position
           ? { left: position.left, top: position.top }
@@ -120,10 +152,10 @@ export default function BoxPopover({
     >
       <div
         aria-hidden="true"
-        className="mx-auto mb-3 h-1 w-10 rounded-full bg-line-strong lg:hidden"
+        className="mx-auto mb-2 h-1 w-10 rounded-full bg-line-strong lg:hidden"
       />
 
-      <div className="mb-3 flex items-start justify-between gap-2">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           {typeName ? (
             <span className="shrink-0 rounded-sm bg-accent-soft px-1.5 py-0.5 text-label font-medium text-accent">
@@ -150,7 +182,7 @@ export default function BoxPopover({
         </button>
       </div>
 
-      <div className="flex items-center justify-between border-y border-line py-3">
+      <div className="flex items-center justify-between border-y border-line py-3 max-lg:py-2">
         <label
           htmlFor="popover-redact"
           className="flex flex-1 cursor-pointer flex-col gap-0.5"
@@ -158,7 +190,14 @@ export default function BoxPopover({
           <span className="text-body-sm font-medium text-ink">
             Redact this area
           </span>
-          <span className="text-label text-ink-3">
+          <span
+            className="text-label text-ink-3 max-lg:truncate"
+            title={
+              skipped
+                ? "Off. The exported PNG keeps these pixels."
+                : "On. These pixels are replaced."
+            }
+          >
             {skipped
               ? "Off. The exported PNG keeps these pixels."
               : "On. These pixels are replaced."}
@@ -183,11 +222,11 @@ export default function BoxPopover({
       </div>
 
       <fieldset
-        className="mt-3 flex flex-col gap-2"
+        className="mt-3 flex flex-col gap-2 max-lg:mt-2"
         disabled={skipped}
         aria-describedby={skipped ? "popover-style-disabled" : undefined}
       >
-        <legend className="text-label font-semibold tracking-wide text-ink-3 uppercase">
+        <legend className="text-label font-semibold tracking-wide text-ink-3 uppercase max-lg:sr-only">
           Fill style
         </legend>
         <div className={`flex flex-wrap gap-1.5 ${skipped ? "opacity-40" : ""}`}>
@@ -225,14 +264,16 @@ export default function BoxPopover({
             Use toolbar default instead
           </button>
         ) : (
-          <p className="text-label text-ink-3">Following the toolbar default.</p>
+          <p className="text-label text-ink-3 max-lg:hidden">
+            Following the toolbar default.
+          </p>
         )}
       </fieldset>
 
       <button
         type="button"
         onClick={onDelete}
-        className="mt-3 min-h-11 w-full rounded-sm border border-danger bg-danger-soft px-3 text-label font-semibold text-danger transition-hover hover:brightness-95"
+        className="mt-3 min-h-11 w-full rounded-sm border border-danger bg-danger-soft px-3 text-label font-semibold text-danger transition-hover hover:brightness-95 max-lg:mt-2"
       >
         Delete this box
       </button>

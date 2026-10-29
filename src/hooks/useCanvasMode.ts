@@ -3,17 +3,17 @@
 import { useCallback, useState } from "react";
 
 /**
- * How the canvas answers a touch: draw a box, or pan the page.
+ * Whether the image is editable or merely viewable.
  *
- * `draw` sets `touch-action: none` on the canvas, which is what makes a finger
- * drag paint a rectangle — and also what makes a phone unable to scroll a tall
- * screenshot, because every pan attempt becomes a rectangle. `scroll` hands the
- * gesture back to the browser.
+ * `draw` sets `touch-action: none` on the canvas: a finger drag paints a
+ * rectangle and a tap covers a line, which is exactly what editing needs and
+ * exactly what stops a tall screenshot from being panned. `scroll` hands the
+ * gesture back to the browser and the image responds to nothing.
  *
- * Scroll is the default on touch devices: the common first job on a phone is
- * reviewing a long screenshot, and an accidental rectangle is worse than a
- * deliberate mode change. Desktop pointers draw, always, since a mouse drag
- * costs the user nothing.
+ * Scroll is the default on touch devices because the first job on a phone is
+ * reading the screenshot, and a screenshot that paints rectangles under a
+ * scrolling finger reads as broken. Desktop pointers always draw: a mouse drag
+ * costs the user nothing and cannot be confused with a pan.
  */
 export type CanvasMode = "draw" | "scroll";
 

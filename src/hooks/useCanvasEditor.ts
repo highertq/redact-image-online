@@ -32,13 +32,17 @@ type Options = {
    */
   onPick?: (index: number, anchor: { left: number; top: number; width: number; height: number }) => void;
   /**
-   * `draw`: a drag paints a rectangle and the canvas keeps the touch gesture to
-   * itself (`touch-action: none`). `scroll`: the browser pans and zooms, and the
-   * canvas only ever sees a tap — a finger that lifts where it landed.
+   * `draw`: the image is editable — a drag paints a rectangle, a tap covers the
+   * line under it — and the canvas keeps every touch gesture to itself
+   * (`touch-action: none`), so it will not pan while you are working.
+   * `scroll`: the image is inert. The browser pans and zooms and a tap does
+   * nothing at all.
    *
-   * Both modes answer a tap the same way. That is the point: on a phone, reading
-   * a long screenshot and covering one line of it are the same session, and the
-   * old design made the user choose between scrolling and tapping.
+   * Letting a tap edit the image in scroll mode was tried and taken back out.
+   * A phone shows a 1170 px-wide screenshot about 390 px wide, so one line of
+   * text is roughly 30 px on screen: the miss rate on "tap the line you mean"
+   * turned covering the wrong thing into the normal case, and an accidental
+   * black bar is worse work than a deliberate mode switch. Editing is opt-in now.
    */
   mode: CanvasMode;
   /**
@@ -81,15 +85,6 @@ export default function useCanvasEditor({
   // the finger travelled on screen rather than by how far it travelled in a
   // 12-megapixel image.
   const startClientRef = useRef<{ x: number; y: number } | null>(null);
-  // In scroll mode nothing is captured and no rectangle is started, but the
-  // landing point is remembered so the lift can be judged as tap or swipe.
-  const tapCandidateRef = useRef<{
-    x: number;
-    y: number;
-    clientX: number;
-    clientY: number;
-    hit: number;
-  } | null>(null);
   const [ghost, setGhost] = useState<Rect | null>(null);
 
   // Leaving draw mode mid-gesture must discard the drag anchor, otherwise a later
@@ -100,7 +95,6 @@ export default function useCanvasEditor({
     if (mode !== "draw") {
       startRef.current = null;
       startClientRef.current = null;
-      tapCandidateRef.current = null;
     }
   }, [mode]);
 
@@ -170,25 +164,13 @@ export default function useCanvasEditor({
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!image) {
+      // Scroll mode is browse-only: the image answers to nothing, because a tap
+      // that misses its 30 px line does damage rather than nothing.
+      if (mode !== "draw" || !image) {
         return;
       }
       const point = toImagePoint(event.clientX, event.clientY);
       const hit = hitTest(rects, point.x, point.y);
-
-      if (mode !== "draw") {
-        // Scroll mode: remember where the finger landed and decide nothing yet.
-        // Acting here would close the box editor the moment a pan begins, and a
-        // pan is exactly what this mode exists to allow.
-        tapCandidateRef.current = {
-          x: point.x,
-          y: point.y,
-          clientX: event.clientX,
-          clientY: event.clientY,
-          hit,
-        };
-        return;
-      }
 
       if (hit >= 0) {
         onSelect(hit);
@@ -227,7 +209,7 @@ export default function useCanvasEditor({
   );
 
   /**
-   * What a tap does, identical in both modes: open the editor of the box under
+   * What a tap does while the image is editable: open the editor of the box under
    * the finger, cover the recognised line under it, or dismiss the editor when
    * there is nothing there. `hit` is the box found at the landing point.
    */
@@ -262,23 +244,6 @@ export default function useCanvasEditor({
 
   const onPointerUp = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
-      const candidate = tapCandidateRef.current;
-      tapCandidateRef.current = null;
-
-      // Scroll mode: only a finger that lifted where it landed counts. Anything
-      // longer was a pan or a zoom, which belongs to the browser, not to us.
-      if (candidate) {
-        const moved = Math.hypot(
-          event.clientX - candidate.clientX,
-          event.clientY - candidate.clientY,
-        );
-        if (moved < TAP_CSS_PX) {
-          const point = toImagePoint(event.clientX, event.clientY);
-          resolveTap(point.x, point.y, candidate.hit);
-        }
-        return;
-      }
-
       const start = startRef.current;
       const startClient = startClientRef.current;
       startRef.current = null;
@@ -325,7 +290,6 @@ export default function useCanvasEditor({
    */
   const onPointerCancel = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
-      tapCandidateRef.current = null;
       startRef.current = null;
       startClientRef.current = null;
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {

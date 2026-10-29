@@ -147,8 +147,9 @@ export default function EditorToolbar({
           onToggle={onToggleType}
         />
         <p className="text-label leading-relaxed text-ink-3">
-          After a scan, tap any text on the image to cover that line — useful for
-          anything the patterns miss.
+          After a scan, switch to Draw boxes and tap any text line to cover it —
+          useful for anything the patterns miss. While Browse is selected the
+          image ignores taps, so a swipe cannot redact anything by accident.
         </p>
         <details className="group rounded-md border border-line bg-surface">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-md px-3 text-body-sm transition-hover hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
