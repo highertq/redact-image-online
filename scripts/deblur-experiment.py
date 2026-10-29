@@ -214,6 +214,25 @@ def template_attack(img: np.ndarray, truth: str, method: str) -> str:
     return guess
 
 
+def messenger_reencode(img: np.ndarray, longest_edge: int = 1600, quality: int = 70) -> np.ndarray:
+    """The lossy hop a shared screenshot actually takes.
+
+    A chat app rescales to a target longest edge and re-encodes as JPEG, so this
+    runs the same two operations on the covered image and hands back what the
+    receiver's attacker would see. Quality 70 at 1600 px is the shape of
+    WhatsApp's behaviour on a phone screenshot; it is a simulation of the step,
+    not a captured sample from the app.
+    """
+    h, w = img.shape[:2]
+    scale = longest_edge / max(h, w)
+    if scale < 1:
+        img = cv2.resize(img, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA)
+    ok, buf = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
+    if not ok:
+        raise RuntimeError("jpeg encode failed")
+    return cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
+
+
 def degrade(img: np.ndarray, method: str) -> np.ndarray:
     if method == "black":
         return apply_black(img)
@@ -256,11 +275,22 @@ def main() -> None:
             ocr_plain = ocr(attacked)
             ocr_deconv = ocr(lucy) if has_signal else ""
             template = template_attack(covered, text, method) if has_signal else ""
+            # The same attack on the version a recipient would actually get.
+            after = messenger_reencode(covered)
+            attacked_after = attack_pipeline(after)
+            lucy_after = richardson_lucy(attacked_after, 3) if has_signal else attacked_after
+            best_after = max(
+                (ocr(attacked_after), ocr(lucy_after)),
+                key=lambda g: -cer(g, text),
+            )
+            exact_after = has_signal and best_after.replace(" ", "").lower() == text.replace(" ", "").lower()
             best_ocr = max((ocr_plain, ocr_deconv), key=lambda g: -cer(g, text))
             results.append(
                 {
                     "text": text,
                     "method": method,
+                    "exactAfterMessenger": exact_after,
+                    "ocrAfterMessenger": best_after,
                     "ocrPlain": ocr_plain,
                     "ocrDeconvolved": ocr_deconv,
                     "template": template,
@@ -306,7 +336,10 @@ def main() -> None:
     for height in heights:
         print(f"{height:>6}px | " + " | ".join(f"{sweep[str(height)][m]:>6}" for m in sweep_methods))
 
-    print(f"{'method':8} {'n':>3} {'OCR exact':>10} {'OCR meanCER':>12} {'Template exact':>15} {'Template CER':>13}")
+    print(
+        f"{'method':8} {'n':>3} {'OCR exact':>10} {'OCR meanCER':>12} "
+        f"{'Template exact':>15} {'Template CER':>13} {'after messenger':>16}"
+    )
     for method in methods:
         rows = [r for r in results if r["method"] == method]
         n = len(rows)
@@ -314,7 +347,11 @@ def main() -> None:
         tpl_exact = sum(1 for r in rows if r["exactTemplate"])
         ocr_cer = sum(r["cerBestOcr"] for r in rows) / n
         tpl_cer = sum(r["cerTemplate"] for r in rows) / n
-        print(f"{method:8} {n:>3} {ocr_exact:>5}/{n:<4} {ocr_cer:>12.3f} {tpl_exact:>10}/{n:<4} {tpl_cer:>13.3f}")
+        after_exact = sum(1 for r in rows if r["exactAfterMessenger"])
+        print(
+            f"{method:8} {n:>3} {ocr_exact:>5}/{n:<4} {ocr_cer:>12.3f} {tpl_exact:>10}/{n:<4}"
+            f" {tpl_cer:>13.3f} {after_exact:>6}/{n}"
+        )
 
     print(f"\nresults: {OUT_DIR / 'results.json'} and size-sweep.json")
     print(f"evidence crops: {sorted(p.name for p in OUT_DIR.glob('evidence-*.png'))}")

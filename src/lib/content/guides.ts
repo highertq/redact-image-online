@@ -148,7 +148,7 @@ export const IS_BLUR_SAFE: Guide = {
     {
       question: "What about a blur applied in a screenshot tool before saving?",
       answer:
-        "That is a real filter applied to real pixels, so it is the same analysis. It is better than an overlay, and weaker than a fill for credentials.",
+        "That is a real filter applied to real pixels, so it is the same analysis. It is better than an overlay, and weaker than a fill for credentials. How much weaker is measured rather than argued on the recovery experiment page: a radius-2 blur over 26-pixel text gave back seven of eight strings intact, and still seven of eight after a chat app re-encoded it.",
     },
   ],
   related: ["redact-vs-blur", "remove-exif", "what-does-redact-mean", "can-blurred-text-be-recovered"],

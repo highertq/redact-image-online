@@ -21,7 +21,7 @@ export const CAN_BLUR_BE_REVERSED: Guide = {
   h1: "Can Blurred Text in an Image Be Recovered?",
   title: "Can Blurred Text Be Recovered?",
   description:
-    "A measured test: light blur over 26px text was read back correctly 7 times out of 8. Solid fill and pixelation returned nothing.",
+    "A measured test: light blur was read back 7 of 8 times, before and after chat-app compression. Solid fills and pixelation returned nothing.",
   lede:
     "People ask this because they have blurred something in a phone's markup tool and want to know if that was enough. The honest answer depends on a number nobody states — the radius of the blur relative to the height of the letters — so this page measures it: five concealment settings, one attack pipeline, and the exact strings that came back out.",
   sections: [
@@ -60,6 +60,24 @@ export const CAN_BLUR_BE_REVERSED: Guide = {
       ],
     },
     {
+      heading: "Sending it through a chat app does not help you",
+      body: [
+        "There is a reasonable-sounding idea that the compression a messenger applies on the way out finishes the job the blur started: the file gets downscaled and JPEG-encoded, so whatever faint detail was left should be ground away. It was measured, and it is wrong. The same eight strings were covered, then re-encoded with the shape of a chat app's treatment — longest edge scaled to 1600 pixels, JPEG quality 70 — and the same attack run on the received file.",
+        "Radius-2 blur: 7 of 8 recovered before the hop, and 7 of 8 recovered after it. Not one string became safer. The one that still failed, the IBAN, came back with an extra space in it — `IBAN GB82WEST 12345698765432` — which a reader can read as well as the original.",
+        "The reason is worth understanding, because it predicts the next case. The detail that survives a light blur is low-amplitude but high-contrast at the stroke edges, and JPEG at quality 70 on a mostly white document preserves exactly that: flat areas cost it nothing to encode, and a text region is close to a two-tone image. Compression destroys the parts of a photograph an attacker was never using. Pixelation and solid fills came back 0 of 8 in both conditions — for them the hop is irrelevant because there was nothing to preserve.",
+        "The practical form of this: the copy your recipient can open is not safer than the file you made. If the cover was weak before you pressed send, it is weak afterwards, and re-sharing a compressed version of the same mistake adds only delay.",
+      ],
+    },
+    {
+      heading: "Run it on your own file",
+      body: [
+        "The experiment above uses synthetic renders because that is the only way to hold every variable still and compare methods. It is not the file you are worried about. The second script in the repository, `scripts/redaction-inspect.py`, takes any image you point at it and answers the only question you actually have about your own.",
+        "It reports the file's format, dimensions, colour mode and frame count, whether an alpha channel exists and how many pixels in it are not fully opaque, then looks for uniform rectangular regions and classifies each one as a solid fill, a partially flat block or a region where detail survives. With `--attack` it also runs the full attack over the whole picture and prints what the machine can read. That last line is the one to look at.",
+        "The distinction it is built to catch is the one that hurts: a cover drawn with transparency over text. It looks correct in the preview, the pixels underneath are still in the file, and the transparency check calls it out immediately. A flattened solid rectangle reports purity 1.000 with a value spread of zero and its attack line returns noise; a light blur reports no uniform region at all and its whole-image attack returns the string — on the test file, `123-45-6789`, read straight back.",
+        "Its limits are as important as its output. It inspects one raster file. A PDF can carry the original text and image objects under a drawn rectangle no matter how opaque the rectangle looks on screen, and nothing here opens the PDF's object list to check; a Live Photo, a burst, a HEIC sequence or the original file still sitting in the camera roll are all outside what a single-image checker can tell you. Where the document came from a real redaction pipeline — a PDF, a court filing, a hospital record — the verification has to happen in that format, not in a screenshot of it.",
+      ],
+    },
+    {
       heading: "So what should someone actually do",
       body: [
         "For any value that must not survive — an identity number, a card, an account reference, a name — use a solid fill. It is the only setting tested that produced no partial information: no glyph shape, no stroke count, no character length. Everything else in the test leaked something, including pixelation at the wrong block size.",
@@ -70,8 +88,8 @@ export const CAN_BLUR_BE_REVERSED: Guide = {
     {
       heading: "Reproduce it yourself",
       body: [
-        "The script is short and has no unusual dependencies: `python scripts/deblur-experiment.py`. It needs OpenCV, Pillow and a tesseract binary on the PATH. It writes a table to the console plus results.json and size-sweep.json in a temporary directory, along with the covered crops it tested, so you can point the tools at your own images and your own font instead.",
-        "Changing the glyph heights, the font or the strings is the point. A test that only proves something about a synthetic 26-pixel Arial line is not worth a page of reading; run it on the text you actually intend to hide.",
+        "Two scripts are in the repository and neither has unusual dependencies: OpenCV, Pillow and a tesseract binary on the PATH. `python scripts/deblur-experiment.py` runs the whole comparison and prints three things — the per-method table including the chat-app column, the glyph-height sweep, and a count of how many of the eight strings came back — then writes results.json, size-sweep.json and the covered crops it tested into a temporary directory. `python scripts/redaction-inspect.py <file> --attack` runs the same attack on a file you choose.",
+        "Changing the strings, the font or the heights is the point of having the code rather than the table. A result that only describes synthetic 26-pixel Arial is not worth a page of reading, and the two cases where this experiment is weakest are exactly the two you can test for yourself: run it on the compressed file your messenger actually delivered rather than the one the tool exported, and run the inspector on the screenshot your phone's own markup made, because those are the images people share and the ones nobody measures.",
       ],
     },
   ],
@@ -95,6 +113,16 @@ export const CAN_BLUR_BE_REVERSED: Guide = {
       question: "Can AI Recover Blurred Text Better Than This?",
       answer:
         "Almost certainly, and this page deliberately does not measure it. Generative restoration models reconstruct plausible text where the pixels are ambiguous, which makes them good at exactly the task this test declares out of scope. The absence of an AI attack is a limitation of the experiment, not evidence that a strong blur is safe. A fill has nothing for a model to work from.",
+    },
+    {
+      question: "Does Sending a Blurred Screenshot Through a Chat App Make It Safe?",
+      answer:
+        "No. The same eight strings were measured before and after a messenger-shaped re-encode (longest edge 1600 px, JPEG quality 70) and the result was 7 of 8 recovered in both conditions. Compression is not a concealment layer, it is a delivery loss, and on a mostly white document with dark text it costs the attacker almost nothing.",
+    },
+    {
+      question: "How Do I Check a File I Already Sent or About to Send?",
+      answer:
+        "Run `python scripts/redaction-inspect.py your-image.png --attack` on it. It reports whether a cover is a solid fill or a region that still holds detail, flags non-opaque pixels, and prints whatever OCR can read from the whole picture. It reads one raster file, so a PDF's own objects and the original still sitting in your camera roll are outside what it can tell you.",
     },
     {
       question: "Why Does Text Size Change the Answer So Much?",
