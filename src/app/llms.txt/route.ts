@@ -70,7 +70,7 @@ function body(): string {
   lines.push("- Languages: text recognition runs in the browser with twelve models selectable (English, Spanish, French, German, Portuguese, Italian, Russian, Turkish, Arabic, Simplified Chinese, Japanese, Korean). Field-name rules are written in twelve languages, so detection does not depend on the document's language matching a preset.");
   lines.push("- Formats: PNG, JPEG, WebP, up to 25 MB and 40 million pixels.");
   lines.push("- Output: PNG. Three fill styles — solid black, solid white, pixelate.");
-  lines.push("- Works offline once the page has loaded.");
+  lines.push("- No server round-trip: once the page and its recognition models are in memory, redacting and exporting issue no further requests. There is no service worker, so this is not an offline-first app and reloading without a connection will not work.");
   lines.push("- Not available: face or license-plate detection, PDF input, batch processing, and editing anything other than an image. Blurring is deliberately not offered as a redaction method because light blur can be reversed.");
   lines.push("");
 

@@ -7,6 +7,11 @@ import {
 } from "@/lib/content/scenarios-business";
 import { PHONE_NUMBER } from "@/lib/content/scenarios-contacts";
 import {
+  REDACT_ON_ANDROID,
+  REDACT_ON_IPHONE,
+} from "@/lib/content/scenarios-phone-devices";
+import { REDACT_ON_PHONE } from "@/lib/content/scenarios-phone";
+import {
   BANK_STATEMENT,
   RECEIPT,
   SCREENSHOT,
@@ -17,10 +22,17 @@ import type { Scenario } from "@/lib/content/types";
 
 /**
  * Every scenario page, in navigation order. Grouped to mirror the clusters:
- * screenshots, identity numbers, financial documents, business paperwork.
+ * screenshots, the phone cluster, identity numbers, financial documents,
+ * business paperwork.
  */
 export const SCENARIOS: Scenario[] = [
   SCREENSHOT,
+  // The phone cluster sits next to the generic screenshot page it expands on:
+  // the list order is the navigation order, and a hub page buried at the bottom
+  // of the grid is a hub page nobody reaches from the query it answers.
+  REDACT_ON_PHONE,
+  REDACT_ON_IPHONE,
+  REDACT_ON_ANDROID,
   SSN,
   CARD_NUMBER,
   EMAIL,

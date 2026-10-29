@@ -6,6 +6,7 @@ import { GUIDES, guideBySlug } from "@/lib/content/guides-index";
 import { PILLAR_ANCHOR_PREFIX } from "@/lib/content/types";
 import { STANDING_PAGES, standingDates } from "@/lib/content/dates";
 import { SCENARIOS, scenarioBySlug } from "@/lib/content/scenarios";
+import type { Guide, Scenario } from "@/lib/content/types";
 
 function allSlugs(): string[] {
   return SCENARIOS.map((item) => item.slug);
@@ -204,6 +205,54 @@ describe("hand-written page metadata", () => {
       const match = /description:\s*\n?\s*"([^"]+)"/.exec(source);
       expect(match, `${file} has no description`).not.toBeNull();
       expect(match![1].length, `${file} (${match![1].length} chars)`).toBeLessThanOrEqual(160);
+    }
+  });
+});
+
+describe("content depth", () => {
+  // The one thing that turns a keyword-per-page cluster into a doorway cluster is
+  // pages that satisfy the schema while saying almost nothing. Length alone is
+  // gameable, so this checks structure as well: a page that cannot fill its own
+  // field list, detection limits, steps and questions has not been researched
+  // enough to publish.
+  const prose = (item: Scenario | Guide) =>
+    [
+      item.lede,
+      "risk" in item ? item.risk.body.join(" ") : "",
+      "fields" in item ? item.fields.intro + " " + item.fields.rows.map((r) => `${r.label} ${r.detail}`).join(" ") : "",
+      "auto" in item ? item.auto.intro + " " + [...item.auto.detects, ...item.auto.misses].join(" ") : "",
+      "steps" in item ? item.steps.intro + " " + item.steps.items.map((s) => `${s.title} ${s.body}`).join(" ") : "",
+      "detail" in item ? item.detail.body.join(" ") : "",
+      "sections" in item ? item.sections.map((s) => s.body.join(" ")).join(" ") : "",
+      item.faq.map((f) => `${f.question} ${f.answer}`).join(" "),
+    ].join(" ");
+
+  it("gives every scenario enough substance to be worth its own URL", () => {
+    for (const scenario of SCENARIOS) {
+      const words = prose(scenario).split(/\s+/).filter(Boolean).length;
+      expect(words, `${scenario.slug} has ${words} words`).toBeGreaterThanOrEqual(900);
+      expect(scenario.fields.rows.length, scenario.slug).toBeGreaterThanOrEqual(5);
+      expect(scenario.auto.misses.length, scenario.slug).toBeGreaterThanOrEqual(4);
+      expect(scenario.steps.items.length, scenario.slug).toBeGreaterThanOrEqual(6);
+      expect(scenario.faq.length, scenario.slug).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it("always states a limitation, never only a capability", () => {
+    // A page whose "auto-detect" section only lists wins is marketing copy, and
+    // it is the shape that gets a tool page demoted for being misleading.
+    for (const scenario of SCENARIOS) {
+      expect(scenario.auto.detects.length, scenario.slug).toBeGreaterThan(0);
+      // No upper bound on `misses` on purpose: the honest pages are the ones with
+      // the longest list of ways the tool can fail.
+      expect(scenario.auto.misses.length, `${scenario.slug} lists no failure modes`).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps guides above the depth floor too", () => {
+    for (const guide of GUIDES) {
+      const words = prose(guide).split(/\s+/).filter(Boolean).length;
+      expect(words, `${guide.slug} has ${words} words`).toBeGreaterThanOrEqual(600);
     }
   });
 });
