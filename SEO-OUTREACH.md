@@ -31,11 +31,12 @@
 | 它已经承认的元事实（原文） | *"Every page that currently ranks for this subject is published by one of the tools it compares, and every one of them puts itself first."* |
 
 **pitch 角度（三条按优先级）**
+0. **【新·最强钩子】它文章里有一节就叫 "Can a blur be undone?"，正文只给判断不给数据。我们现在有数据，而且是最反直觉的那条：**半径 2px 模糊在 26px 字高上 8 条还原 7 条，**经过聊天软件再压缩后仍然 7/8**——"发出去之前先让对方压一下就好了"这个误解可以正面破掉。这个数字可以直接引用或让对方自己跑 `scripts/deblur-experiment.py` 复现。
 1. **它把"是否上传"当作最重批判标准**，而它推荐的检测最强项（Aspose）恰好上传 → 补一个"浏览器内、可复核检测框、还免广告"的条目，是替它把论证补严，不是求它加广告位。
 2. 它的表格没有"能读哪些语言的文字"这一维。我们：字段名规则 12 种语言、390 个词、15 套非 ASCII 数字折成 ASCII 再匹配，`+1`、`415 555 0132`、`090-1234-5678`、`١٢٣٤٥٦٧٨٩` 都算数。建议它加一列 `Reads text in which languages`。
 3. **它文章里"blur 不安全"那段是断言**，我们有可复现数据（半径 2px 在 26px 字高上 8 条还原 7 条、纯色填充 0/8、以及字高扫描表）。提供引用/提供脚本，不要求对方一定要提本站。
 
-**要给的资产**：`/guides/can-blurred-text-be-recovered`（含脚本路径） > `/methodology` > 首页。
+**要给的资产**：`/guides/can-blurred-text-be-recovered`（含两个脚本路径：实验 + 读者自查工具）> `/methodology` > 首页。
 **风险**：作者是竞品（ImgTools 自己上榜），大概率不会加我们；但**它是我们那篇实验页最合适的引用对象**——被对手引用一次的价值高于排名。
 
 ### 2. HideFaces — *Best Free Image Privacy Tools for Faces, Text, and License Plates*
@@ -86,12 +87,20 @@
 
 | 资产 | 状态 | 还能加什么 |
 |---|---|---|
-| 还原攻击实验 + 脚本 | ✅ 已上线 | 补 2 个变量：**JPEG 质量维度**（截图经 WhatsApp 压缩后还剩多少可还原）与**手机 Markup 真实样本**（用真机 Markup 导出的图跑同一攻击）——这两点一旦补齐，就是全网唯一带数据的"手机涂黑到底安不安全" |
+| 还原攻击实验 + 脚本 | ✅ 已上线并扩展 | **聊天软件压缩维度已补**（结论：blur2 前后均 7/8，压缩不是保护层）；**读者自查工具 `redaction-inspect.py` 已上**（可判定半透明遮盖/纯色填充/轻模糊三类，并用真图验证过）。**仍缺：真机 Markup 导出样本与真实 WhatsApp 收件文件**——需要一个真实文件，只有你能提供（跑法：`python scripts/redaction-inspect.py 你的图.png --attack`，把输出发我） |
 | `/methodology` 规则表（9 类 + 12 语词表 + 失效边界） | ✅ 已上线 | 加"我们测过的文档样本数与语言分布"小节，让它成为可引用的事实来源 |
 | `/security-audit` | ✅ 已上线 | 把"飞行模式下可完成全流程"写成可复现步骤，供清单文引用 |
 | 手机簇三页 | ✅ 新上 | 缺真机截图；补 3 张（iPhone Safari / Android Chrome / 弹层遮挡）会显著提升被引用概率 |
 
 ---
+
+## 三点五、给对方的可复现钩子（比"请收录我"强得多）
+
+| 可给的钩子 | 具体做法 | 为什么有效 |
+|---|---|---|
+| 一句可复现的话 | "跑 `python scripts/deblur-experiment.py`，看 after chat app 那一列" | 清单文作者最爱引用的是**他们能自己验证并写进文章**的东西，而不是我们的自述 |
+| 一张他们能用的图 | `/experiments/blur-recovery-evidence.png`（5 行对照，67 KB） | 清单文普遍缺"证据图"，直接可用比"允许引用"省他们 20 分钟 |
+| 一个他们没测过的维度 | 手机再压缩前后对比、字高扫描表 | 对方文章里"blur 能不能还原"只有结论没有数据，我们补的是内容缺口不是广告位 |
 
 ## 四、节奏与追踪（每周 30 分钟）
 
