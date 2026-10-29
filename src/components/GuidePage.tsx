@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { H2, Kicker, Lede, Prose, Section } from "@/components/Typography";
@@ -82,6 +83,23 @@ export default function GuidePage({ guide }: { guide: Guide }) {
                   <p key={text.slice(0, 48)}>{text}</p>
                 ))}
               </Prose>
+              {section.figure ? (
+                <figure className="mt-6 flex flex-col gap-2">
+                  {/* Dimensions are declared so the box is reserved before the
+                      file arrives: no shift under a reader's finger. */}
+                  <Image
+                    src={section.figure.src}
+                    alt={section.figure.alt}
+                    width={section.figure.width}
+                    height={section.figure.height}
+                    loading="lazy"
+                    className="h-auto w-full max-w-full rounded-md border border-line bg-surface-2"
+                  />
+                  <figcaption className="text-label leading-relaxed text-ink-3">
+                    {section.figure.caption}
+                  </figcaption>
+                </figure>
+              ) : null}
             </Section>
           ))}
 

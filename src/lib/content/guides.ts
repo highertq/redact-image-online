@@ -75,7 +75,7 @@ export const REDACT_VS_BLUR: Guide = {
         "Solid black. It replaces pixels rather than degrading them, it is unambiguous to a reader, and it survives compression and re-encoding without becoming less opaque.",
     },
   ],
-  related: ["is-blur-safe", "remove-exif", "what-does-redact-mean"],
+  related: ["is-blur-safe", "remove-exif", "what-does-redact-mean", "can-blurred-text-be-recovered"],
   relatedScenarios: ["redact-screenshot", "redact-ssn"],
   pillarLink: {
     before:
@@ -151,7 +151,7 @@ export const IS_BLUR_SAFE: Guide = {
         "That is a real filter applied to real pixels, so it is the same analysis. It is better than an overlay, and weaker than a fill for credentials.",
     },
   ],
-  related: ["redact-vs-blur", "remove-exif", "what-does-redact-mean"],
+  related: ["redact-vs-blur", "remove-exif", "what-does-redact-mean", "can-blurred-text-be-recovered"],
   relatedScenarios: ["redact-screenshot", "redact-card-number"],
   pillarLink: {
     before:

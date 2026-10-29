@@ -3,6 +3,22 @@ export type StepItem = { title: string; body: string };
 export type FaqItem = { question: string; answer: string };
 
 /**
+ * An image inside a guide section, used by the experiment page where the
+ * evidence is a picture of the attack working rather than a claim about it.
+ * Width and height are required so the browser reserves the space before the
+ * file arrives: an image that pops in later shifts the text under a reader's
+ * finger, which is a layout shift on the exact page teaching people about
+ * verification.
+ */
+export type Figure = {
+  src: string;
+  alt: string;
+  caption: string;
+  width: number;
+  height: number;
+};
+
+/**
  * A contextual link back to the homepage from inside the body copy of a
  * scenario page. The anchor is split into three parts so every page can word
  * the sentence differently while still linking with the primary keyword.
@@ -75,7 +91,7 @@ export type Guide = {
   title: string;
   description: string;
   lede: string;
-  sections: { heading: string; body: string[] }[];
+  sections: { heading: string; body: string[]; figure?: Figure }[];
   faq: FaqItem[];
   /** Contextual link to the homepage, same pillar-anchor contract as Scenario. */
   pillarLink: PillarLink;

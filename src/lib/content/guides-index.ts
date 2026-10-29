@@ -1,3 +1,4 @@
+import { CAN_BLUR_BE_REVERSED } from "@/lib/content/guides-experiment";
 import {
   IS_BLUR_SAFE,
   REDACT_VS_BLUR,
@@ -9,6 +10,9 @@ import type { Guide } from "@/lib/content/types";
 export const GUIDES: Guide[] = [
   REDACT_VS_BLUR,
   IS_BLUR_SAFE,
+  // Sits next to the two pages whose question it settles with measurement: a
+  // reader arriving at "is blur safe" should be one link from the numbers.
+  CAN_BLUR_BE_REVERSED,
   REMOVE_EXIF,
   WHAT_DOES_REDACT_MEAN,
 ];
