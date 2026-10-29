@@ -2,6 +2,8 @@ import type { Scenario } from "@/lib/content/types";
 
 export const API_KEY: Scenario = {
   slug: "redact-api-key",
+  published: "2026-10-27",
+  updated: "2026-10-27",
   navLabel: "API keys and tokens",
   h1: "Redact an API Key Before You Share a Screenshot",
   title: "Redact an API Key",
@@ -160,6 +162,8 @@ export const API_KEY: Scenario = {
 
 export const IP_ADDRESS: Scenario = {
   slug: "redact-ip-address",
+  published: "2026-10-27",
+  updated: "2026-10-27",
   navLabel: "IP addresses",
   h1: "Remove an IP Address From a Screenshot",
   title: "Remove an IP Address",

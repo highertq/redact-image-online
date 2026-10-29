@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DataTable, H2, PageHeader, Prose, Section } from "@/components/Typography";
-import { CONTENT_DATE } from "@/lib/content/dates";
+import { standingDates } from "@/lib/content/dates";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
 import { SITE_NAME } from "@/lib/site";
 
 const PATH = "/security-audit";
+const DATES = standingDates(PATH);
 
 export const metadata: Metadata = contentMetadata({
   title: "Security Audit",
@@ -87,8 +88,8 @@ export default function SecurityAuditPage() {
               description:
                 "A line-by-line audit of the network and storage surface of the redaction tool.",
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: DATES.published,
+              dateModified: DATES.updated,
             }),
           ),
         }}

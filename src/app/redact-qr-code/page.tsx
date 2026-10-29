@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import ScenarioPage from "@/components/ScenarioPage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { QR_CODE } from "@/lib/content/scenarios-business";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
@@ -30,8 +29,8 @@ export default function Page() {
               headline: QR_CODE.h1,
               description: QR_CODE.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: QR_CODE.published,
+              dateModified: QR_CODE.updated,
             }),
           ),
         }}

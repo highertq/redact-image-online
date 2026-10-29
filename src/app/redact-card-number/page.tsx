@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import ScenarioPage from "@/components/ScenarioPage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { CARD_NUMBER } from "@/lib/content/scenarios-identity";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
@@ -30,8 +29,8 @@ export default function Page() {
               headline: CARD_NUMBER.h1,
               description: CARD_NUMBER.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: CARD_NUMBER.published,
+              dateModified: CARD_NUMBER.updated,
             }),
           ),
         }}

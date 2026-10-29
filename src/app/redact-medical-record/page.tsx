@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import ScenarioPage from "@/components/ScenarioPage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { MEDICAL_RECORD } from "@/lib/content/scenarios-business";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
@@ -30,8 +29,8 @@ export default function Page() {
               headline: MEDICAL_RECORD.h1,
               description: MEDICAL_RECORD.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: MEDICAL_RECORD.published,
+              dateModified: MEDICAL_RECORD.updated,
             }),
           ),
         }}

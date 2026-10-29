@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { GUIDES, guideBySlug } from "@/lib/content/guides-index";
 import { PILLAR_ANCHOR_PREFIX } from "@/lib/content/types";
+import { STANDING_PAGES, standingDates } from "@/lib/content/dates";
 import { SCENARIOS, scenarioBySlug } from "@/lib/content/scenarios";
 
 function allSlugs(): string[] {
@@ -151,6 +154,56 @@ describe("guide content", () => {
     for (const guide of GUIDES) {
       expect(guide.related).not.toContain(guide.slug);
       expect(guide.relatedScenarios).not.toContain(guide.slug);
+    }
+  });
+});
+
+describe("content dates", () => {
+  // A single site-wide "last updated" date is a lie that Google learns to
+  // ignore: it makes every page look freshly revised whenever one changed, and
+  // it dates pages from when the site shipped rather than when they did. Each
+  // record therefore carries its own dates, and this test is what stops the
+  // arrangement from quietly collapsing back into a shared constant.
+  it("gives every record a real ISO date pair", () => {
+    const iso = /^\d{4}-\d{2}-\d{2}$/;
+    for (const item of [...SCENARIOS, ...GUIDES]) {
+      expect(item.published, `${item.slug} published`).toMatch(iso);
+      expect(item.updated, `${item.slug} updated`).toMatch(iso);
+      expect(item.updated >= item.published, `${item.slug} updated before published`).toBe(
+        true,
+      );
+    }
+  });
+
+  it("records dates for the hand-written pages too", () => {
+    for (const [path, dates] of Object.entries(STANDING_PAGES)) {
+      expect(dates.published).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(dates.updated >= dates.published, path).toBe(true);
+    }
+    // A page added without listing its dates here must fail loudly rather than
+    // inherit somebody else's date.
+    expect(() => standingDates("/no-such-page")).toThrow(/STANDING_PAGES/);
+  });
+
+  it("does not stamp every page with one identical date", () => {
+    // If the registry ever points all records at the same string again, the
+    // sitemap's lastmod has stopped carrying any information.
+    const dates = new Set([...SCENARIOS, ...GUIDES].map((item) => item.updated));
+    expect(dates.size).toBeGreaterThan(1);
+  });
+});
+
+describe("hand-written page metadata", () => {
+  // Pages outside the registry (methodology, security-audit) hard-code their
+  // description in the page file, where no registry validation reaches them.
+  // One of them shipped at 197 characters and got truncated in the SERP.
+  it("keeps non-registry page descriptions inside 160 characters", () => {
+    const files = ["src/app/methodology/page.tsx", "src/app/security-audit/page.tsx"];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      const match = /description:\s*\n?\s*"([^"]+)"/.exec(source);
+      expect(match, `${file} has no description`).not.toBeNull();
+      expect(match![1].length, `${file} (${match![1].length} chars)`).toBeLessThanOrEqual(160);
     }
   });
 });

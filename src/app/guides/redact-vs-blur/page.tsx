@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import GuidePage from "@/components/GuidePage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { REDACT_VS_BLUR } from "@/lib/content/guides";
 import { guideHref } from "@/lib/content/guides-index";
 import { contentMetadata } from "@/lib/metadata";
@@ -32,8 +31,8 @@ export default function Page() {
               headline: REDACT_VS_BLUR.h1,
               description: REDACT_VS_BLUR.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: REDACT_VS_BLUR.published,
+              dateModified: REDACT_VS_BLUR.updated,
             }),
           ),
         }}

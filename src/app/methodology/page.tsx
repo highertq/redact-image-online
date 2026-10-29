@@ -2,17 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DataTable, H2, PageHeader, Prose, Section } from "@/components/Typography";
-import { CONTENT_DATE } from "@/lib/content/dates";
+import { standingDates } from "@/lib/content/dates";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
 import { SITE_NAME } from "@/lib/site";
 
 const PATH = "/methodology";
+const DATES = standingDates(PATH);
 
 export const metadata: Metadata = contentMetadata({
   title: "How Detection Works",
   description:
-    "The exact rules behind auto-detect: nine pattern types with checksums, label rules in twelve languages for fields no pattern knows, priority-based overlap resolution, and the cases that get missed.",
+    "The rules behind auto-detect: nine checksum-verified pattern types, field-name rules in twelve languages, overlap resolution, and what still gets missed.",
   path: PATH,
 });
 
@@ -107,8 +108,8 @@ export default function MethodologyPage() {
               description:
                 "The pattern rules, checksum, and overlap resolution behind automatic detection.",
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: DATES.published,
+              dateModified: DATES.updated,
             }),
           ),
         }}

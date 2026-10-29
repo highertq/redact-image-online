@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import GuidePage from "@/components/GuidePage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { WHAT_DOES_REDACT_MEAN } from "@/lib/content/guides";
 import { guideHref } from "@/lib/content/guides-index";
 import { contentMetadata } from "@/lib/metadata";
@@ -32,8 +31,8 @@ export default function Page() {
               headline: WHAT_DOES_REDACT_MEAN.h1,
               description: WHAT_DOES_REDACT_MEAN.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: WHAT_DOES_REDACT_MEAN.published,
+              dateModified: WHAT_DOES_REDACT_MEAN.updated,
             }),
           ),
         }}

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import ScenarioPage from "@/components/ScenarioPage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { SSN } from "@/lib/content/scenarios-identity";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
@@ -30,8 +29,8 @@ export default function Page() {
               headline: SSN.h1,
               description: SSN.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: SSN.published,
+              dateModified: SSN.updated,
             }),
           ),
         }}

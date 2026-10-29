@@ -2,6 +2,8 @@ import type { Scenario } from "@/lib/content/types";
 
 export const INVOICE: Scenario = {
   slug: "redact-invoice",
+  published: "2026-10-26",
+  updated: "2026-10-28",
   navLabel: "Invoices",
   h1: "Redact an Invoice Before You Send It",
   title: "Redact an Invoice",
@@ -168,6 +170,8 @@ export const INVOICE: Scenario = {
 
 export const CONTRACT: Scenario = {
   slug: "redact-contract",
+  published: "2026-10-26",
+  updated: "2026-10-28",
   navLabel: "Contracts",
   h1: "Redact a Contract Before Sharing a Copy",
   title: "Redact a Contract",
@@ -340,6 +344,8 @@ export const CONTRACT: Scenario = {
 
 export const MEDICAL_RECORD: Scenario = {
   slug: "redact-medical-record",
+  published: "2026-10-26",
+  updated: "2026-10-28",
   navLabel: "Medical records",
   h1: "Redact a Medical Record Before Sharing It",
   title: "Redact a Medical Record",
@@ -512,6 +518,8 @@ export const MEDICAL_RECORD: Scenario = {
 
 export const QR_CODE: Scenario = {
   slug: "redact-qr-code",
+  published: "2026-10-26",
+  updated: "2026-10-28",
   navLabel: "QR codes",
   h1: "Cover a QR Code in an Image",
   title: "Cover a QR Code",
@@ -672,6 +680,8 @@ export const QR_CODE: Scenario = {
 
 export const SIGNATURE: Scenario = {
   slug: "redact-signature",
+  published: "2026-10-26",
+  updated: "2026-10-28",
   navLabel: "Signatures",
   h1: "Remove a Signature From an Image",
   title: "Remove a Signature",

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import GuidePage from "@/components/GuidePage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { IS_BLUR_SAFE } from "@/lib/content/guides";
 import { guideHref } from "@/lib/content/guides-index";
 import { contentMetadata } from "@/lib/metadata";
@@ -32,8 +31,8 @@ export default function Page() {
               headline: IS_BLUR_SAFE.h1,
               description: IS_BLUR_SAFE.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: IS_BLUR_SAFE.published,
+              dateModified: IS_BLUR_SAFE.updated,
             }),
           ),
         }}

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import ScenarioPage from "@/components/ScenarioPage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { BANK_STATEMENT } from "@/lib/content/scenarios-documents";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
@@ -30,8 +29,8 @@ export default function Page() {
               headline: BANK_STATEMENT.h1,
               description: BANK_STATEMENT.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: BANK_STATEMENT.published,
+              dateModified: BANK_STATEMENT.updated,
             }),
           ),
         }}

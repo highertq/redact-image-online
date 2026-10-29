@@ -2,6 +2,8 @@ import type { Scenario } from "@/lib/content/types";
 
 export const SSN: Scenario = {
   slug: "redact-ssn",
+  published: "2026-10-25",
+  updated: "2026-10-28",
   navLabel: "Social Security numbers",
   h1: "Redact a Social Security Number From an Image",
   title: "Redact SSN in an Image",
@@ -155,6 +157,8 @@ export const SSN: Scenario = {
 
 export const CARD_NUMBER: Scenario = {
   slug: "redact-card-number",
+  published: "2026-10-25",
+  updated: "2026-10-28",
   navLabel: "Card numbers",
   h1: "Redact a Credit Card Number From a Screenshot",
   title: "Redact a Card Number",
@@ -308,6 +312,8 @@ export const CARD_NUMBER: Scenario = {
 
 export const EMAIL: Scenario = {
   slug: "redact-email-address",
+  published: "2026-10-25",
+  updated: "2026-10-28",
   navLabel: "Email addresses",
   h1: "Hide an Email Address in a Screenshot",
   title: "Hide an Email in a Screenshot",

@@ -2,6 +2,8 @@ import type { Guide } from "@/lib/content/types";
 
 export const REDACT_VS_BLUR: Guide = {
   slug: "redact-vs-blur",
+  published: "2026-10-25",
+  updated: "2026-10-27",
   navLabel: "Redact vs blur",
   h1: "Redaction vs Blur: Which One Actually Removes the Information",
   title: "Redaction vs Blur",
@@ -86,6 +88,8 @@ export const REDACT_VS_BLUR: Guide = {
 
 export const IS_BLUR_SAFE: Guide = {
   slug: "is-blur-safe",
+  published: "2026-10-25",
+  updated: "2026-10-27",
   navLabel: "Is blurring safe",
   h1: "Is Blurring Text in a Screenshot Actually Safe?",
   title: "Is Blurring Text Safe?",
@@ -160,6 +164,8 @@ export const IS_BLUR_SAFE: Guide = {
 
 export const REMOVE_EXIF: Guide = {
   slug: "remove-exif",
+  published: "2026-10-25",
+  updated: "2026-10-27",
   navLabel: "Strip EXIF data",
   h1: "Remove EXIF and GPS Data by Re-Encoding the Image",
   title: "Remove EXIF From an Image",
@@ -241,6 +247,8 @@ export const REMOVE_EXIF: Guide = {
 
 export const WHAT_DOES_REDACT_MEAN: Guide = {
   slug: "what-does-redact-mean",
+  published: "2026-10-25",
+  updated: "2026-10-27",
   navLabel: "What redact means",
   h1: "What Does Redact Mean?",
   title: "What Does Redact Mean?",

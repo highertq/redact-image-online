@@ -2,6 +2,8 @@ import type { Scenario } from "@/lib/content/types";
 
 export const PHONE_NUMBER: Scenario = {
   slug: "redact-phone-number",
+  published: "2026-10-27",
+  updated: "2026-10-29",
   navLabel: "Phone numbers",
   h1: "Redact a Phone Number From a Screenshot",
   title: "Redact a Phone Number",

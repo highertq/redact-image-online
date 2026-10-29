@@ -4,7 +4,6 @@ import ScenarioPage from "@/components/ScenarioPage";
 import { SCREENSHOT } from "@/lib/content/scenarios-documents";
 import { contentMetadata } from "@/lib/metadata";
 import { articleLd, breadcrumbLd, jsonLdScript } from "@/lib/schema";
-import { CONTENT_DATE } from "@/lib/content/dates";
 
 const PATH = "/redact-screenshot";
 
@@ -30,8 +29,8 @@ export default function Page() {
               headline: SCREENSHOT.h1,
               description: SCREENSHOT.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: SCREENSHOT.published,
+              dateModified: SCREENSHOT.updated,
             }),
           ),
         }}

@@ -2,6 +2,8 @@ import type { Scenario } from "@/lib/content/types";
 
 export const SCREENSHOT: Scenario = {
   slug: "redact-screenshot",
+  published: "2026-10-25",
+  updated: "2026-10-29",
   navLabel: "Screenshots",
   h1: "Redact Text in a Screenshot Before You Share It",
   title: "Redact Text in a Screenshot",
@@ -174,6 +176,8 @@ export const SCREENSHOT: Scenario = {
 
 export const BANK_STATEMENT: Scenario = {
   slug: "redact-bank-statement",
+  published: "2026-10-25",
+  updated: "2026-10-29",
   navLabel: "Bank statements",
   h1: "Redact a Bank Statement Before Sending It",
   title: "Redact a Bank Statement",
@@ -330,6 +334,8 @@ export const BANK_STATEMENT: Scenario = {
 
 export const RECEIPT: Scenario = {
   slug: "redact-receipt",
+  published: "2026-10-25",
+  updated: "2026-10-29",
   navLabel: "Receipts",
   h1: "Redact a Receipt Before Posting or Sending It",
   title: "Redact a Receipt",

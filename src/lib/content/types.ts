@@ -24,10 +24,22 @@ export const PILLAR_ANCHOR_PREFIX = "redact image online";
  * One scenario landing page. Every field is written per page — nothing here is
  * a shared boilerplate block, because near-identical pages would read as
  * doorway pages to a search engine and to a person.
+ *
+ * `published` and `updated` are carried by the record rather than taken from a
+ * site-wide constant because a single shared date is a lie: it tells Google
+ * every page changed whenever any page changed, which is the fastest way to get
+ * `lastmod` ignored, and it dates a page from when the *site* shipped rather
+ * than when that page did. Bump `updated` in the same edit that changes the
+ * copy — the value is rendered into `dateModified` in the JSON-LD and the
+ * sitemap, so it is only honest if it moves with the text.
  */
 export type Scenario = {
   /** URL segment, e.g. "redact-ssn" */
   slug: string;
+  /** ISO date the page first went live. `YYYY-MM-DD`. */
+  published: string;
+  /** ISO date the copy below last changed. `YYYY-MM-DD`. */
+  updated: string;
   /** Short label used in navigation lists. */
   navLabel: string;
   h1: string;
@@ -54,6 +66,10 @@ export type Scenario = {
 
 export type Guide = {
   slug: string;
+  /** ISO date the page first went live. See the note on `Scenario`. */
+  published: string;
+  /** ISO date the copy below last changed. See the note on `Scenario`. */
+  updated: string;
   navLabel: string;
   h1: string;
   title: string;

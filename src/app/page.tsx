@@ -16,7 +16,7 @@ import {
   buildHomeJsonLd,
 } from "./home-content";
 import { OG_IMAGE } from "@/lib/metadata";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 const cardLink =
   "flex min-h-11 items-center rounded-md border border-line px-4 text-body-sm font-medium text-ink transition-hover hover:border-accent hover:bg-accent-soft";
@@ -27,11 +27,16 @@ const PAGE_DESCRIPTION = HOME_PAGE_DESCRIPTION;
 export const metadata: Metadata = {
   title: { absolute: PAGE_TITLE },
   description: PAGE_DESCRIPTION,
-  alternates: { canonical: "/" },
+  // Absolute and with the trailing slash. metadataBase resolves "/" to the bare
+  // host with no slash, which is a different string from the "https://…/" the
+  // sitemap advertises. Google merges the two, but a canonical and a sitemap
+  // entry should be the same URL rather than two spellings of it — every
+  // ambiguity in that pair costs a little crawl trust on a young domain.
+  alternates: { canonical: `${SITE_URL}/` },
   openGraph: {
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
-    url: "/",
+    url: `${SITE_URL}/`,
     siteName: SITE_NAME,
     type: "website",
     images: [OG_IMAGE],

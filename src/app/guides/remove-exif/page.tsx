@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import GuidePage from "@/components/GuidePage";
-import { CONTENT_DATE } from "@/lib/content/dates";
 import { REMOVE_EXIF } from "@/lib/content/guides";
 import { guideHref } from "@/lib/content/guides-index";
 import { contentMetadata } from "@/lib/metadata";
@@ -32,8 +31,8 @@ export default function Page() {
               headline: REMOVE_EXIF.h1,
               description: REMOVE_EXIF.description,
               path: PATH,
-              datePublished: CONTENT_DATE,
-              dateModified: CONTENT_DATE,
+              datePublished: REMOVE_EXIF.published,
+              dateModified: REMOVE_EXIF.updated,
             }),
           ),
         }}
