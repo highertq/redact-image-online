@@ -11,6 +11,7 @@ import {
   REDACT_ON_IPHONE,
 } from "@/lib/content/scenarios-phone-devices";
 import { REDACT_ON_PHONE } from "@/lib/content/scenarios-phone";
+import { FOREIGN_LANGUAGE_DOCUMENT } from "@/lib/content/scenarios-languages";
 import {
   BANK_STATEMENT,
   RECEIPT,
@@ -33,6 +34,10 @@ export const SCENARIOS: Scenario[] = [
   REDACT_ON_PHONE,
   REDACT_ON_IPHONE,
   REDACT_ON_ANDROID,
+  // Cross-cutting rather than a document type: it is the page a reader lands on
+  // when the pattern rules fail because the document is not in English, so it
+  // sits with the other "how do I actually do this" pages, not with SSN or card.
+  FOREIGN_LANGUAGE_DOCUMENT,
   SSN,
   CARD_NUMBER,
   EMAIL,

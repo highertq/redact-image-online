@@ -329,7 +329,7 @@ export const BANK_STATEMENT: Scenario = {
     after:
       "walkthrough starts with rasterizing the page for exactly that reason.",
   },
-  related: ["redact-receipt", "redact-card-number", "redact-ssn", "redact-contract"],
+  related: ["redact-receipt", "redact-card-number", "redact-ssn", "redact-contract", "redact-foreign-language-document"],
 };
 
 export const RECEIPT: Scenario = {
@@ -494,5 +494,5 @@ export const RECEIPT: Scenario = {
     after:
       "tool runs one image at a time with no per-export cost and no account to manage.",
   },
-  related: ["redact-bank-statement", "redact-card-number", "redact-screenshot", "redact-invoice"],
+  related: ["redact-bank-statement", "redact-card-number", "redact-screenshot", "redact-invoice", "redact-foreign-language-document"],
 };
