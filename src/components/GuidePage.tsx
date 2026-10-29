@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { H2, Kicker, Lede, Prose, Section } from "@/components/Typography";
@@ -85,14 +84,25 @@ export default function GuidePage({ guide }: { guide: Guide }) {
               </Prose>
               {section.figure ? (
                 <figure className="mt-6 flex flex-col gap-2">
-                  {/* Dimensions are declared so the box is reserved before the
-                      file arrives: no shift under a reader's finger. */}
-                  <Image
+                  {/*
+                    A deliberate <img>: this is a static export with no image
+                    optimisation endpoint available, and the asset is one
+                    hand-sized PNG already at its delivery dimensions. next/image
+                    would buy nothing here and would add its client runtime to
+                    every guide page, on a site whose competitive difference is
+                    that it loads less than the tools it is compared with. What
+                    is worth keeping from next/image — a reserved box so the text
+                    does not jump when the file arrives — is done by the width
+                    and height attributes below.
+                  */}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- static export, hand-sized asset, see note above */}
+                  <img
                     src={section.figure.src}
                     alt={section.figure.alt}
                     width={section.figure.width}
                     height={section.figure.height}
                     loading="lazy"
+                    decoding="async"
                     className="h-auto w-full max-w-full rounded-md border border-line bg-surface-2"
                   />
                   <figcaption className="text-label leading-relaxed text-ink-3">
